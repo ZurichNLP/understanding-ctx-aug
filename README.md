@@ -14,6 +14,9 @@ This repository is a reimplementation of zero-shot control methods described in 
 conda create -n unsup_ctrl python=3.8
 conda activate unsup_ctrl
 pip install -r requirements.txt
+
+cd src/transformers
+git checkout origin/unsup_cntrl
 ```
 
 ### Data
@@ -39,8 +42,12 @@ pip3 install -r requirements.txt
 python3 build.py  --reddit_client_id CLIENT_ID --reddit_client_secret CLIENT_SECRET --reddit_user_agent USER_AGENT
 ```
 
-This build takes around 1 hour. Once completed, we can prepare the data for model evaluation using the script `prepare_topical_chat_dataset.py`
+This build takes around 1 hour. Once completed, we can prepare the data for model evaluation run 
 
 ```
-python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
+bash prepare_data.sh
 ```
+
+<!-- ```
+python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
+``` -->

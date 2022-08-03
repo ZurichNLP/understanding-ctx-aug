@@ -14,16 +14,19 @@
 # 
 # To prepare the input, we assign a fixed number of tokens for each section in the input. 
 # 
-# We call each section a bucket. If the actual number of tokens of an input section is less than the total tokens assigned for that bucket, we pad the input to infill the empty tokens. 
+# We call each section a bucket. If the actual number of tokens of an input section is less 
+# than the total tokens assigned for that bucket, we pad the input to infill the empty tokens. 
 # 
 # In particular, we provide 32 tokens for the knowledge snippet k and 25 tokens for each turn in the dialog history. 
 # 
-# We start the input sequence with the special token 〈s〉, followed by the knowledge snippet’s bucket. Next, we include the dialog history, whose turns use alternate start symbols: 〈speaker1〉, 〈speaker2〉. 
+# We start the input sequence with the special token 〈s〉, followed by the knowledge snippet’s bucket.
+# Next, we include the dialog history, whose turns use alternate start symbols: 〈speaker1〉, 〈speaker2〉. 
 # 
-# Overall, our input comprises 163 tokens, 33 knowledge tokens plus 26 turn tokens for each of the 5 turns. On the decoder side, for teacher-forcing, we provide the human response as the input, along with the start token 〈s〉"
+# Overall, our input comprises 163 tokens, 33 knowledge tokens plus 26 turn tokens for each of the 5 turns. 
+# On the decoder side, for teacher-forcing, we provide the human response as the input, along with the start token 〈s〉"
 
 """
-python prepare_topical_chat_dataset.py --data_dir /data/tkew/projects/unsup_cntrl/Topical-Chat --split test_freq --history_length 5
+python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
 
 
 """
@@ -31,11 +34,14 @@ python prepare_topical_chat_dataset.py --data_dir /data/tkew/projects/unsup_cntr
 # %%
 import json
 from pathlib import Path
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 from pprint import pprint
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import argparse
 import random
+from tqdm import tqdm
+import re
+from transformers import AutoTokenizer
 
 # %%
 
@@ -50,13 +56,14 @@ class TopicalChat:
     def __init__(self, data_dir: str, split: str):
         
         self.split = split
+        self.data_dir = data_dir
         self.seed = 42 # for reproducibility
 
         # don't need this because we use the `enriched version`
         # conv_file = Path(data_dir) / f'conversations/{split}.json'
         # self.conv_data = self._load_json(conv_file)
 
-        dialogues_with_linked_ = Path(data_dir) / f'TopicalChatEnriched/{split}.json'
+        dialogues_with_linked_knowledge = Path(data_dir) / f'TopicalChatEnriched/{split}.json'
         self.annotated_dialogues = self._load_json(dialogues_with_linked_knowledge)
 
         reading_set = Path(data_dir) / f'reading_sets/post-build/{split}.json'
@@ -152,7 +159,7 @@ class TopicalChat:
         return knowledge_text
 
 
-    def extract_knowledge_grounded_dialogue(self, dialogue_id: str, history_length: int = history_length, verbose: bool = False) -> List:
+    def extract_knowledge_grounded_dialogue(self, dialogue_id: str, history_length: int = 5, verbose: bool = False) -> List:
         """
         extract all knowledge-grounded source-target sequence pairs from a given dialogue.
         """
@@ -181,7 +188,7 @@ class TopicalChat:
 
         return src_tgt_pairs
 
-    def get_all_dialogues(self, history_length: int = history_length, verbose: bool = False) -> List:
+    def get_all_dialogues(self, history_length: int = 5, verbose: bool = False) -> List:
         all_dialogues = []
         for dialogue_id in self.annotated_dialogues.keys():
             all_dialogues.extend(self.extract_knowledge_grounded_dialogue(dialogue_id, history_length=history_length, verbose=verbose))
@@ -195,19 +202,66 @@ class TopicalChat:
             
         return all_dialogues
 
-    def write_output_file(self, save_dir: str, dialogues: List, shuffle: bool = True) -> None:
+    def write_to_file(self, save_dir: str, dialogues: List, shuffle: bool = True) -> None:
 
-        output_file = Path(save_dir) / f'{self.split}.src'
+        if not Path(save_dir).exists():
+            Path(save_dir).mkdir(parents=True)
+
+        output_file = Path(save_dir) / f'{self.split}.jsonl'
 
         if shuffle:
             random.seed(self.seed)
             random.shuffle(dialogues)
 
         with open(output_file, 'w', encoding='utf8') as f:
-            for dialogue in shuffle(dialogues):
-                f.write(dialogue.src + '\n')
-            
+            c = 0
+            for dialogue in (dialogues):
+                c += 1
+                f.write(json.dumps(asdict(dialogue), ensure_ascii=False) + '\n')
+            print(f'Wrote {c} dialogues to {output_file}')
 
+    @staticmethod
+    def tokenize_dialogues(
+        dialogues: List, 
+        tokenizer: str, 
+        history_bucket_size: int, 
+        knowledge_bucket_size: int, 
+        split: str, 
+        save_dir: str, 
+        verbose: bool = False
+        ) -> List:
+
+        """
+        Tokenize all dialogues in a list of dialogue instances.
+        """
+        
+        outpath = Path(save_dir) / f'{tokenizer.replace("/", "-")}' 
+        
+        if not outpath.exists():
+            outpath.mkdir(parents=True)
+
+        src_output_file = outpath / f'{split}.src'
+        tgt_output_file = outpath / f'{split}.tgt'
+        
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+        
+        speaker_id = re.compile(r'<speaker([0-9])>\s?') # remove speaker tag from target
+        
+        with open(src_output_file, 'w', encoding='utf8') as src_file:
+            with open(tgt_output_file, 'w', encoding='utf8') as tgt_file:
+            
+                for dialogue in tqdm(dialogues, total=len(dialogues), desc='Tokenizing dialogues', disable=verbose):
+                
+                    knowledge_text = ' '.join(tokenizer.tokenize(dialogue.knowledge, max_length=knowledge_bucket_size, padding='max_length', truncation=True))
+                    history = ' '.join([' '.join(tokenizer.tokenize(turn, max_length=history_bucket_size, padding='max_length', truncation=True)) for turn in dialogue.turns])
+
+                    src_tok = tokenizer.bos_token + ' ' + knowledge_text + ' ' + history # + ' ' + tokenizer.eos_token
+                    tgt_tok = tokenizer.bos_token + ' ' + ' '.join(tokenizer.tokenize(re.sub(speaker_id, '', dialogue.target), max_length=256, truncation=True))
+            
+                    src_file.write(src_tok + '\n')
+                    tgt_file.write(tgt_tok + '\n')
+
+        return
 #%%
 
 def set_args():
@@ -219,34 +273,36 @@ def set_args():
     ap.add_argument('--knowledge_length', type=int, default=1, help='number of knowledge snippets to use for dialogue grounding')
     
     ap.add_argument('--tokenizer', type=str, default='facebook/bart-base', help='name or path to model tokenizer')
-    ap.add_argument('--knowlegde_bucket_size', type=int, default=32, help='number of tokens in bucket for knowledge snippets')
+    ap.add_argument('--knowledge_bucket_size', type=int, default=32, help='number of tokens in bucket for knowledge snippets')
     ap.add_argument('--history_bucket_size', type=int, default=25, help='number of tokens in bucket for a historical turn')
     
     ap.add_argument('--verbose', action='store_true', help='print out debug information')
-    ap.add_argument('--save_dir', type=str, default='/data/tkew/projects/unsup_cntrl/Topical-Chat/knowledge_grounded_dialogues', help='path to save directory')
+    ap.add_argument('--save_dir', type=str, default='KGD', help='path to save directory')
     
     return ap.parse_args()
 
 #%% 
 if __name__ == "__main__":
 
-# tc = TopicalChat(data_dir, 'test_freq')
-# tc = TopicalChat(data_dir, 'test_rare')
-# test_id = 't_d004c097-424d-45d4-8f91-833d85c2da31'
-# tc.extract_knowledge_grounded_dialogue(test_id)
+    # tc = TopicalChat(data_dir, 'test_freq')
+    # tc = TopicalChat(data_dir, 'test_rare')
+    # test_id = 't_d004c097-424d-45d4-8f91-833d85c2da31'
+    # tc.extract_knowledge_grounded_dialogue(test_id)
 
     args = set_args()
 
     tc = TopicalChat(args.data_dir, args.split)
 
-    # for split in ['test_freq']:
-
-    #     tc = TopicalChat(data_dir, split)
-
     dialogues = tc.get_all_dialogues()
+    tc.write_to_file(args.save_dir, dialogues)
     
-    for i in range(20):
-        print()
-        print(dialogues[i])
-
+    # tokenize inputs according to description in the paper
+    tc.tokenize_dialogues(dialogues, tokenizer=args.tokenizer, 
+        history_bucket_size=args.history_bucket_size, 
+        knowledge_bucket_size=args.knowledge_bucket_size,
+        split=args.split, 
+        save_dir=args.save_dir, 
+        verbose=args.verbose)
+    
+    
 
