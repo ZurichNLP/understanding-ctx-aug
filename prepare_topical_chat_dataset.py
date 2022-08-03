@@ -1,32 +1,30 @@
-# %% [markdown]
+
+"""
 # # Prepare Topical-Chat Dataset for Knowlegde-Grounded Dialogue Model
 # 
 # "We use the setting introduced in the Topical-Chat dataset (Gopalakrishnan et al., 2019) which includes dialogues between two Mechanical Turk workers (a.k.a. Turkers). 
 # 
 # Based on the previous work (Hedayatnia et al., 2020), we choose the setting where for each turn in the dialog, the knowledge snippet that is the most similar to the ground truth response is selected using TF-IDF and is provided as additional input."
 # 
-# 
 # From Hazarika et al., 2021 (A.1):
 # 
 # "input comprises a knowledge snippet k and the dialog history h. 
-# 
 # Here, dialog history is the last five turns in the dialog, with respect to the response. 
-# 
 # To prepare the input, we assign a fixed number of tokens for each section in the input. 
 # 
 # We call each section a bucket. If the actual number of tokens of an input section is less 
 # than the total tokens assigned for that bucket, we pad the input to infill the empty tokens. 
-# 
 # In particular, we provide 32 tokens for the knowledge snippet k and 25 tokens for each turn in the dialog history. 
 # 
 # We start the input sequence with the special token 〈s〉, followed by the knowledge snippet’s bucket.
 # Next, we include the dialog history, whose turns use alternate start symbols: 〈speaker1〉, 〈speaker2〉. 
-# 
 # Overall, our input comprises 163 tokens, 33 knowledge tokens plus 26 turn tokens for each of the 5 turns. 
 # On the decoder side, for teacher-forcing, we provide the human response as the input, along with the start token 〈s〉"
 
-"""
-python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
+NOTE: due to different handling of <speaker1> and <speaker2> tags, our input lengths may differ slightly.
+
+Example Usage:
+    python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
 
 
 """
@@ -253,7 +251,9 @@ class TopicalChat:
                 for dialogue in tqdm(dialogues, total=len(dialogues), desc='Tokenizing dialogues', disable=verbose):
                 
                     knowledge_text = ' '.join(tokenizer.tokenize(dialogue.knowledge, max_length=knowledge_bucket_size, padding='max_length', truncation=True))
-                    history = ' '.join([' '.join(tokenizer.tokenize(turn, max_length=history_bucket_size, padding='max_length', truncation=True)) for turn in dialogue.turns])
+                    # '<speaker1>' and '<speaker2>' (e.g. '<', 'spe', 'aker', '1', '>') tags are split into 4 tokens with BART's tokenizer, 
+                    # so we account for this by extending the max length of each history turn
+                    history = ' '.join([' '.join(tokenizer.tokenize(turn, max_length=history_bucket_size+4, padding='max_length', truncation=True)) for turn in dialogue.turns])
 
                     src_tok = tokenizer.bos_token + ' ' + knowledge_text + ' ' + history # + ' ' + tokenizer.eos_token
                     tgt_tok = tokenizer.bos_token + ' ' + ' '.join(tokenizer.tokenize(re.sub(speaker_id, '', dialogue.target), max_length=256, truncation=True))

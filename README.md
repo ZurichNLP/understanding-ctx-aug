@@ -42,7 +42,7 @@ pip3 install -r requirements.txt
 python3 build.py  --reddit_client_id CLIENT_ID --reddit_client_secret CLIENT_SECRET --reddit_user_agent USER_AGENT
 ```
 
-This build takes around 1 hour. Once completed, we can prepare the data for model evaluation run 
+This build takes around 1 hour. Once completed, we can prepare the data for training according to the desctiption provided in Hazarika et al., (2021)with the following command:
 
 ```
 bash prepare_data.sh
