@@ -200,15 +200,16 @@ class TopicalChat:
             
         return all_dialogues
 
-    def write_to_file(self, save_dir: str, dialogues: List, shuffle: bool = True) -> None:
+    @staticmethod
+    def write_to_file(dialogues: List, save_dir: str, shuffle: bool = False, seed: int = 42) -> None:
 
         if not Path(save_dir).exists():
             Path(save_dir).mkdir(parents=True)
 
-        output_file = Path(save_dir) / f'{self.split}.jsonl'
+        output_file = Path(save_dir) / f'{self.split}.json' # files are jsonl format
 
         if shuffle:
-            random.seed(self.seed)
+            random.seed(seed)
             random.shuffle(dialogues)
 
         with open(output_file, 'w', encoding='utf8') as f:
@@ -294,15 +295,15 @@ if __name__ == "__main__":
     tc = TopicalChat(args.data_dir, args.split)
 
     dialogues = tc.get_all_dialogues()
-    tc.write_to_file(args.save_dir, dialogues)
+    tc.write_to_file(dialogues, args.save_dir)
     
-    # tokenize inputs according to description in the paper
-    tc.tokenize_dialogues(dialogues, tokenizer=args.tokenizer, 
-        history_bucket_size=args.history_bucket_size, 
-        knowledge_bucket_size=args.knowledge_bucket_size,
-        split=args.split, 
-        save_dir=args.save_dir, 
-        verbose=args.verbose)
+    # # tokenize inputs according to description in the paper
+    # tc.tokenize_dialogues(dialogues, tokenizer=args.tokenizer, 
+    #     history_bucket_size=args.history_bucket_size, 
+    #     knowledge_bucket_size=args.knowledge_bucket_size,
+    #     split=args.split, 
+    #     save_dir=args.save_dir, 
+    #     verbose=args.verbose)
     
     
 

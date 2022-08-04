@@ -131,3 +131,6 @@ dmypy.json
 data/
 s3it/
 scratch/
+models/
+src/
+

@@ -1,10 +1,13 @@
+absl-py==1.2.0
 blessings==1.7
 certifi==2022.6.15
 charset-normalizer==2.1.0
+datasets==2.4.0
 filelock==3.7.1
 gpustat==0.6.0
 huggingface-hub==0.8.1
 idna==3.3
+nltk==3.7
 numpy==1.23.1
 nvidia-ml-py3==7.352.0
 packaging==21.3
@@ -17,6 +20,7 @@ pyparsing==3.0.9
 PyYAML==6.0
 regex==2022.7.25
 requests==2.28.1
+rouge-score==0.1.2
 six==1.16.0
 tokenizers==0.12.1
 torch==1.12.0
