@@ -49,7 +49,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, is_offline_mode, send_example_telemetry
 from transformers.utils.versions import require_version
-
+from transformers.trainer_callback import EarlyStoppingCallback
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.21.0.dev0")
@@ -156,6 +156,10 @@ class DataTrainingArguments:
     speaker_id_tag: Optional[str] = field(
         default='<speaker1>',
         metadata={"help": "The tag used to indicate the speaker in the knowledge column (for knowledge-grounded dialogue gen)."},
+    )
+    project_name: Optional[str] = field(
+        default='unsup_ctrl',
+        metadata={"help": "Project name used for logging to WandB."},
     )
     train_file: Optional[str] = field(
         default=None, metadata={"help": "The input training data file (a jsonlines or csv file)."}
@@ -277,6 +281,27 @@ class DataTrainingArguments:
         },
     )
 
+    early_stopping: bool = field(
+        default=True,
+        metadata={
+            "help": "whether or not to monitor for early stopping"
+        },
+    )
+
+    early_stopping_patience: Optional[int] = field(
+        default=5,
+        metadata={
+            "help": "number of eval steps to run before terminating due to no improvement"
+        },
+    )
+    
+    early_stopping_threshold: Optional[float] = field(
+        default=0.01,
+        metadata={
+            "help": "how much the specified metric must improve to satisfy early stopping conditions"
+        },
+    )
+
     def __post_init__(self):
         if self.dataset_name is None and self.train_file is None and self.validation_file is None:
             raise ValueError("Need either a dataset name or a training/validation file.")
@@ -319,6 +344,14 @@ def main():
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    if "wandb" in training_args.report_to:
+        import wandb
+        wandb.init(
+            project=data_args.project_name, 
+            tags=[f'train_samples_{data_args.max_train_samples}', data_args.train_file, data_args.validation_file, data_args.test_file],
+            group=model_args.model_name_or_path
+            )
 
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
     # information sent is the one passed as arguments along with your Python/PyTorch versions.
@@ -710,7 +743,14 @@ def main():
     )
 
     # Metric
-    metric = load_metric("rouge")
+    rouge_metric = load_metric("rouge")
+    bleu_metric = load_metric("sacrebleu")
+
+    training_callbacks = None
+    if data_args.early_stopping:
+        training_callbacks = [EarlyStoppingCallback(data_args.early_stopping_patience, data_args.early_stopping_threshold)]
+        logging.info(f"early stopping callback set with patience {data_args.early_stopping_patience} \
+            and threshold {data_args.early_stopping_threshold}")
 
     def postprocess_text(preds, labels):
         preds = [pred.strip() for pred in preds]
@@ -735,9 +775,12 @@ def main():
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-        result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+        rouge_result = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+        bleu_result = bleu_metric.compute(predictions=decoded_preds, references=[[l] for l in decoded_labels])
         # Extract a few results from ROUGE
-        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+        rouge_result = {key: value.mid.fmeasure * 100 for key, value in rouge_result.items()}
+        bleu_result = {key: value for key, value in bleu_result.items() if not isinstance(value, list)}
+        result = {**rouge_result, **bleu_result}
 
         prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
         result["gen_len"] = np.mean(prediction_lens)
@@ -753,6 +796,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics if training_args.predict_with_generate else None,
+        callbacks=training_callbacks,
     )
 
     # Training
