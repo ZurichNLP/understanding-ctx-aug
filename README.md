@@ -51,3 +51,24 @@ bash prepare_data.sh
 <!-- ```
 python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
 ``` -->
+
+### Fine-tuning base models
+
+The script `train.py` is adapted from Hugging Face's `run_summarization.py` example script and can be used to fine-tune a new model for our experiments.
+
+The script `run_finetuning.sh` provides the training commands used to train our models. For example, to re-run fine-tuning for BART-base, run
+
+```
+. ./run_finetuning.sh && fine_tune_bart_base_for_kgd [GPU_ID]
+```
+
+### Zero-shot Controlled Generation
+
+**TODO**
+
+```
+# with MUSS simplification model (ported to HF):
+python test_run.py /scratch/tkew/ctrl_tokens/resources/models/muss_en_mined_hf
+
+```
+
