@@ -24,6 +24,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 import re
+from pathlib import Path
 
 import datasets
 import nltk  # Here to have a nice missing dependency error message early on
@@ -185,6 +186,9 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
+    persist_datasets: bool = field(
+        default=False, metadata={"help": "Save the preprocessed datasets to disk as json lines. This will take more space."}
+    )
     max_source_length: Optional[int] = field(
         default=1024,
         metadata={
@@ -303,7 +307,7 @@ class DataTrainingArguments:
     )
 
     def __post_init__(self):
-        if self.dataset_name is None and self.train_file is None and self.validation_file is None:
+        if self.dataset_name is None and self.train_file is None and self.validation_file is None and self.test_file is None:
             raise ValueError("Need either a dataset name or a training/validation file.")
         else:
             if self.train_file is not None:
@@ -331,6 +335,84 @@ summarization_name_mapping = {
     "multi_news": ("document", "summary"),
 }
 
+# def tokenize_function(examples, tokenizer, prefix, knowledge_bucket_size, history_bucket_size, speaker_id_tok_len):
+def tokenize_function(examples, tokenizer, **kwargs):
+    """
+    prepare knowledge-grounded dialogue data for training according to 
+    the desctiption in the appendix A.1 in https://arxiv.org/abs/2106.06411
+    """
+    
+    # speaker ID tags are expected to look something like `<speaker1>`
+    # since these are not part of the model vocab, they get segmented
+    # so we accound for the additional tokens this creates by adding 
+    # a constant to data_args.history_bucket_size
+    speaker_id_tok = tokenizer(kwargs['speaker_id_tag'], add_special_tokens=False, return_length=True)
+    speaker_id_tok_len = speaker_id_tok['length'][0]
+    # logger.info(
+    #         f"tokenized speaker ID tag has length: {speaker_id_tok_len}, e.g. {tokenizer.tokenize(data_args.speaker_id_tag)}"
+    #     )
+
+    # remove pairs where at least one record is None
+    inputs, targets = [], []
+    for i in range(len(examples[kwargs['text_column']])):
+        if examples[kwargs['text_column']][i] and examples[kwargs['summary_column']][i] and examples[kwargs['knowledge_column']][i]:
+            # tokenize knowledge snippet and pad/truncate to length of history bucket size
+            knowledge_tok = tokenizer(
+                examples[kwargs['knowledge_column']][i], 
+                max_length=kwargs['knowledge_bucket_size'], 
+                padding='max_length', 
+                truncation=True, 
+                add_special_tokens=False)['input_ids']
+            
+            # tokenize **each** turn and pad/truncate to length of  bucket length
+            turns_tok = [tokenizer(
+                turn, 
+                max_length=kwargs['history_bucket_size'] + speaker_id_tok_len, 
+                padding='max_length', 
+                truncation=True, 
+                add_special_tokens=False)['input_ids'] for turn in examples[kwargs['text_column']][i]]
+
+            turns_tok = [tok_seq for turn_tok in turns_tok for tok_seq in turn_tok] # flatten
+            input_tok = knowledge_tok + turns_tok # prepend knowledge sequence to dialogue history
+            inputs.append(input_tok)
+    
+            target_text = examples[kwargs['summary_column']][i]
+            if target_text.startswith(kwargs['speaker_id_tag'][:5]):
+                target_text = target_text[len(kwargs['speaker_id_tag']):].strip() # remove speaker tag from target
+
+            target_tok = tokenizer(
+                target_text, 
+                max_length=kwargs['max_target_length'], 
+                truncation=True, 
+                add_special_tokens=True)['input_ids']
+            targets.append(target_tok)
+
+    if kwargs['source_prefix']: # will skip if None or empty string
+        prefix_tok = tokenizer(kwargs['source_prefix'], add_special_tokens=False)['input_ids']
+        inputs = [prefix_tok + inp_tok for inp_tok in inputs]
+    
+    # add bos and eos tokens to input sequence
+    if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
+        inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
+    else:
+        inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
+        
+    model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
+
+    # Setup the tokenizer for targets
+    with tokenizer.as_target_tokenizer():
+        # NOTE this is somewhat unneccessary, but it is closer to the original code...
+        labels = tokenizer.prepare_for_model(targets, add_special_tokens=False)
+
+    # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
+    # padding in the loss.
+    if kwargs['pad_to_max_length'] and kwargs['ignore_pad_token_for_loss']:
+        labels["input_ids"] = [
+            [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
+        ]
+
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -566,63 +648,6 @@ def main():
             f"`{model.__class__.__name__}`. This will lead to loss being calculated twice and will take up more memory"
         )
 
-    # do this here to avoid duplicating processors when preprocessing_num_workers > 1 
-    speaker_id = re.compile(r'<speaker[0-9]>\s?') # remove speaker tag from target
-    # speaker ID tags are expected to look something like `<speaker1>`
-    # since these are not part of the model vocab, they get segmented
-    # so we accound for the additional tokens this creates by adding 
-    # a constant to data_args.history_bucket_size
-    speaker_id_tok = tokenizer(data_args.speaker_id_tag, add_special_tokens=False, return_length=True)
-    speaker_id_tok_len = speaker_id_tok['length'][0]
-    logger.info(
-            f"tokenized speaker ID tag has length: {speaker_id_tok_len}, e.g. {tokenizer.tokenize(data_args.speaker_id_tag)}"
-        )
-
-    def cust_preprocess_function(examples):
-        """
-        prepare knowledge-grounded dialogue data for training according to 
-        the desctiption in the appendix A.1 in https://arxiv.org/abs/2106.06411
-        """
-        # remove pairs where at least one record is None
-        inputs, targets = [], []
-        for i in range(len(examples[text_column])):
-            if examples[text_column][i] and examples[summary_column][i] and examples[knowledge_column][i]:
-        
-                knowledge_tok = tokenizer(examples[knowledge_column][i], max_length=data_args.knowledge_bucket_size, padding='max_length', truncation=True, add_special_tokens=False)['input_ids']
-                turns_tok = [tokenizer(turn, max_length=data_args.history_bucket_size+speaker_id_tok_len, padding='max_length', truncation=True, add_special_tokens=False)['input_ids'] for turn in examples[text_column][i]]
-                turns_tok = [tok_seq for turn_tok in turns_tok for tok_seq in turn_tok] # flatten
-                input_tok = knowledge_tok + turns_tok # prepend knowledge sequence to dialogue history
-                inputs.append(input_tok)
-        
-                targets.append(tokenizer(re.sub(speaker_id, '', examples[summary_column][i]), max_length=max_target_length, truncation=True, add_special_tokens=True)['input_ids'])
-
-        if prefix is not None:
-            prefix_tok = tokenizer(prefix, add_special_tokens=False)['input_ids']
-            inputs = [prefix_tok + inp_tok for inp_tok in inputs]
-        
-        # add bos and eos tokens to input sequence
-        if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
-            inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
-        else:
-            inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
-            
-        model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
-
-        # Setup the tokenizer for targets
-        with tokenizer.as_target_tokenizer():
-            # NOTE this is somewhat unneccessary, but it is closer to the original code...
-            labels = tokenizer.prepare_for_model(targets, add_special_tokens=False)
-
-        # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
-        # padding in the loss.
-        if padding == "max_length" and data_args.ignore_pad_token_for_loss:
-            labels["input_ids"] = [
-                [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
-            ]
-
-        model_inputs["labels"] = labels["input_ids"]
-        return model_inputs
-
     def preprocess_function(examples):
         # remove pairs where at least one record is None
         inputs, targets = [], []
@@ -659,19 +684,23 @@ def main():
         with training_args.main_process_first(desc="train dataset map pre-processing"):
             if data_args.knowledge_column is not None:
                 train_dataset = train_dataset.map(
-                    cust_preprocess_function,
+                    tokenize_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
                     remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on train dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
             else: # original
                 train_dataset = train_dataset.map(
                     preprocess_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
-                    remove_columns=column_names,
+                    # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on train dataset",
                 )
@@ -688,19 +717,23 @@ def main():
         with training_args.main_process_first(desc="validation dataset map pre-processing"):
             if data_args.knowledge_column is not None:
                 eval_dataset = eval_dataset.map(
-                    cust_preprocess_function,
+                    tokenize_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
-                    remove_columns=column_names,
+                    # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on train dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
             else: # original
                 eval_dataset = eval_dataset.map(
                     preprocess_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
-                    remove_columns=column_names,
+                    # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on validation dataset",
                 )
@@ -716,22 +749,33 @@ def main():
         with training_args.main_process_first(desc="prediction dataset map pre-processing"):
             if data_args.knowledge_column is not None:
                 predict_dataset = predict_dataset.map(
-                    cust_preprocess_function,
+                    tokenize_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
-                    remove_columns=column_names,
+                    # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on train dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
-            else:
+            else: # original
                 predict_dataset = predict_dataset.map(
                     preprocess_function,
                     batched=True,
                     num_proc=data_args.preprocessing_num_workers,
-                    remove_columns=column_names,
+                    # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on prediction dataset",
                 )
+
+    # breakpoint()
+    if training_args.do_train and data_args.persist_datasets:
+        train_dataset.to_json(Path(training_args.output_dir) / "train_dataset.json")
+        eval_dataset.to_json(Path(training_args.output_dir) / "eval_dataset.json")
+        predict_dataset.to_json(Path(training_args.output_dir) / "predict_dataset.json")
+        logger.info(f"Saved datasets to {training_args.output_dir}")
 
     # Data collator
     label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
