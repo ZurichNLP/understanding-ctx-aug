@@ -302,6 +302,7 @@ class InferenceModel:
             logger.info(f"Using context code for generation")
         
         outputs = []
+        src_seqs = []
         # breakpoint()
         for pred_batch in tqdm(self.batch_for_generation(predict_dataset, self.gen_args.batch_size, context_code=context_code), total=len(predict_dataset) // self.gen_args.batch_size):
             
@@ -322,18 +323,20 @@ class InferenceModel:
 
             batch_outputs = self.tokenizer.batch_decode(model_outputs, skip_special_tokens=True)
             outputs.extend(batch_outputs)
-        
+            src_seqs.extend(self.tokenizer.batch_decode(pred_batch['input_ids']))
         # pack outputs into a list of lists, i.e. batch_len x num_return_seqs
         outputs = [outputs[i:i+self.gen_args.num_return_sequences] for i in range(0, len(outputs), self.gen_args.num_return_sequences)]
 
-        if self.gen_args.write_to_file:
+        # if not decdoing the full test set, assume debug run and print to stdout
+        if self.data_args.max_predict_samples is not None:
+            for src, gen in zip(src_seqs, outputs):
+                print()
+                print(src, '\t', ' \t'.join(gen))
+
+        elif self.gen_args.write_to_file:
             outfile = self.get_outfile_name()
             self.write_outputs_to_outfile(outputs, outfile)
         
-        # batched_inputs = self.tokenizer.batch_decode(pred_batch['input_ids'])
-        # num_return_sequences
-        # for i, o in zip(pred_batch['turns'], batched_outputs):
-            # print(i, '\t', o)
             
         return outputs
 
@@ -451,7 +454,7 @@ class InferenceModel:
             cross_attention_bias = torch.cat([context_code_attention_bias, cross_attention_bias], dim=-1)
             return cross_attention_bias
         else:
-            return None
+            return cross_attention_bias
 
     @staticmethod
     def load_context_examples(context_file, max_context_examples=10, seed=42) -> Optional[List[str]]:
