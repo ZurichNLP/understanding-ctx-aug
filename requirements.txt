@@ -3,10 +3,13 @@ blessings==1.7
 certifi==2022.6.15
 charset-normalizer==2.1.0
 datasets==2.4.0
+evaluate==0.2.2
 filelock==3.7.1
 gpustat==0.6.0
 huggingface-hub==0.8.1
 idna==3.3
+ipykernel==6.15.1
+mosestokenizer==1.2.1
 nltk==3.7
 numpy==1.23.1
 nvidia-ml-py3==7.352.0

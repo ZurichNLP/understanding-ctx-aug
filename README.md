@@ -20,6 +20,9 @@ python -m spacy download en_core_web_sm
 
 # cd src/transformers
 # git checkout origin/unsup_cntrl
+
+# to run notebook from a server with ipython kernels, run
+python -m ipykernel install --user --name=unsup_ctrl
 ```
 
 ### Data
@@ -90,11 +93,9 @@ python inference.py \
     --seed 42 --batch_size 120 \
     --num_return_sequences 1 --beam_size 4 \
     --do_sample True --top_p 0.9 \
-    --cross_attention_bias 5 --cross_attention_mode knowledge \
-    --context_augmentation_examples data/Topical-Chat/KGD/contexts/questions.txt --context_code_attention_bias 10  --max_context_examples 10 \
+    --cross_attention_bias_value 5 --bias_profile knowledge \
+    --context_augmentation_examples data/Topical-Chat/KGD/contexts/questions.txt --context_code_attention_bias_value 5  --max_context_examples 10 \
     --write_to_file auto
-
-
 
 note, set:
     --max_predict_samples # if debugging or just running on a subset of examples
@@ -104,11 +105,17 @@ note, set:
 
 
 ```
-# baseline
-python evaluate_zero_shot.py models/bart-base/checkpoint-21786/generations_seed=42_ml=64_lp=1.0_ns=1_bs=4_ds=1_temp=1.0_tk=0_tp=0.9_xatt=1-uniform-_ctxt=1--10.txt
+python evaluation/eval.py output_file [--references_file (e.g., test_freq.json)] [--outfile]
+```
 
-# questions context conditioned
-python evaluate_zero_shot.py models/bart-base/checkpoint-21786/generations_seed=42_ml=64_lp=1.0_ns=1_bs=4_ds=1_temp=1.0_tk=0_tp=0.9_xatt=5-uniform-knowledge_ctxt=10-questions-10.txt
+### Reproduction of paper experiments
+
+```
+python run_experiments.py -m models/bart-base --exp_id baseline
+python run_experiments.py -m models/bart-base --exp_id xa_knowledge
+
+python run_experiments.py -m models/t5-small --exp_id baseline
+python run_experiments.py -m models/t5-small --exp_id qu_ctxt_aug
 ```
 
 <!-- **TODO**
@@ -119,3 +126,12 @@ python test_run.py /scratch/tkew/ctrl_tokens/resources/models/muss_en_mined_hf
 
 ``` -->
 
+## TODO
+
+- [x] evaluation
+    -  [x] bleu
+    -  [x] rouge
+    -  [x] meteor
+- [x] experiment script
+- [ ] fix imports for evaluation (currently a works due to try/except hack)
+- [ ] bias profile gradual
