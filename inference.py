@@ -127,16 +127,16 @@ class InferenceArguments:
         metadata={"help": "Probability of top-p sampling"}
     )
 
-    cross_attention_bias: int = field(
+    cross_attention_bias_value: int = field(
         default=1,
         metadata={"help": "Value used to bias cross attention. Default = 1, i.e. no bias. "
             "A bias of 0 acts similarly to setting a custom attention mask for the cross attention."}
     )
 
-    cross_attention_type: str = field(
-        default='uniform',
-        metadata={"help": ""}
-    )
+    # cross_attention_type: str = field(
+    #     default='uniform',
+    #     metadata={"help": ""}
+    # )
 
     context_augmentation_examples: str = field(
         default='',
@@ -149,13 +149,13 @@ class InferenceArguments:
         metadata={"help": "number of context examples to use for context augmentation"}
     )
 
-    context_code_attention_bias: int = field(
+    context_code_attention_bias_value: int = field(
         default=1,
         metadata={"help": "Value used to bias cross attention given context augmentation. Default = 1, i.e. no bias. "
             "A bias of 0 acts similarly to setting a custom attention mask for the cross attention."}
     )
 
-    cross_attention_mode: str = field(
+    bias_profile: str = field(
         default='',
         metadata={"help": "Where to apply the cross attention bias\n"
             "'' means no cross attention bias (i.e. default)\n"
@@ -174,12 +174,30 @@ class InferenceArguments:
         metadata={"help": "Output file for generated text or `auto` to generate outfile name based on generation parameters"}
     )
 
+    verbose: bool = field(
+        default=False,
+        metadata={"help": "Print progress"}
+    )
+
 class InferenceModel:
 
-    def __init__(self, arg_parser: HfArgumentParser):
+    def __init__(self, args):
+        parser = HfArgumentParser((InferenceArguments, ModelArguments, DataTrainingArguments))
+        if len(args) == 2 and args[1].endswith(".json"):
+            # If we pass only one argument to the script and it's the path to a json file,
+            # let's parse it to get our arguments.
+            self.gen_args, self.model_args, self.data_args = parser.parse_json_file(json_file=os.path.abspath(args[1]))
+        elif isinstance(args, dict):
+            self.gen_args, self.model_args, self.data_args = parser.parse_dict(args)
+        else:
+            self.gen_args, self.model_args, self.data_args = parser.parse_args_into_dataclasses()
         
-        self.gen_args, self.model_args, self.data_args = arg_parser.parse_args_into_dataclasses()
-
+        if self.gen_args.verbose:
+            print('*'*25)
+            print('Generation config:')
+            print({**self.gen_args.__dict__, **self.model_args.__dict__, **self.data_args.__dict__})
+            print('*'*25)
+            print()
         # # loading the model you previously trained
         self.model_path = self.model_args.model_name_or_path
         if self.gen_args.checkpoint_dir is not None:
@@ -191,6 +209,10 @@ class InferenceModel:
         if torch.cuda.is_available() and self.gen_args.use_cuda:
             self.model = self.model.cuda()
 
+        # set seed everywhere
+        random.seed(self.gen_args.seed)
+        np.random.seed(self.gen_args.seed)
+        torch.manual_seed(self.gen_args.seed) 
 
     def load_test_set_for_generation(self, dataset: Optional[str] = None):
         ######################################################################
@@ -253,7 +275,7 @@ class InferenceModel:
             current_batch['target'].append(example.get('target'))
 
             # get cross attention biases for each individual example (would be fast to do for a batch if all items are the same)
-            if self.gen_args.cross_attention_bias != 1:
+            if self.gen_args.cross_attention_bias_value != 1:
                 current_batch['cross_attention_bias'].append(self.construct_cross_attention_bias(example['attention_mask']))
             if context_code is not None:
                 current_batch['context_code'].append(context_code)
@@ -303,7 +325,7 @@ class InferenceModel:
         
         outputs = []
         src_seqs = []
-        # breakpoint()
+        
         for pred_batch in tqdm(self.batch_for_generation(predict_dataset, self.gen_args.batch_size, context_code=context_code), total=len(predict_dataset) // self.gen_args.batch_size):
             
             model_outputs = self.model.generate(
@@ -337,7 +359,6 @@ class InferenceModel:
             outfile = self.get_outfile_name()
             self.write_outputs_to_outfile(outputs, outfile)
         
-            
         return outputs
 
     def get_outfile_name(self):
@@ -361,10 +382,10 @@ class InferenceModel:
             outfile += f'_temp={self.gen_args.temperature}'
             outfile += f'_tk={self.gen_args.top_k}'
             outfile += f'_tp={self.gen_args.top_p}'
-            if self.gen_args.cross_attention_bias != 1: # default value = baseline
-                outfile += f'_xatt={self.gen_args.cross_attention_bias}-{self.gen_args.cross_attention_type}-{self.gen_args.cross_attention_mode}'
+            if self.gen_args.cross_attention_bias_value != 1: # default value = baseline
+                outfile += f'_xatt={self.gen_args.cross_attention_bias_value}-{self.gen_args.cross_attention_type}-{self.gen_args.bias_profile}'
             if self.gen_args.context_augmentation_examples: # default no context augmentation = baseline
-                outfile += f'_ctxt={self.gen_args.context_code_attention_bias}-{Path(self.gen_args.context_augmentation_examples).stem}-{self.gen_args.max_context_examples}'
+                outfile += f'_ctxt={self.gen_args.context_code_attention_bias_value}-{Path(self.gen_args.context_augmentation_examples).stem}-{self.gen_args.max_context_examples}'
             outfile += '.txt'
             logger.info(f"Inferred outfile name as {outfile}")
         else:
@@ -414,30 +435,40 @@ class InferenceModel:
         Builds the cross attention bias tensor that is passed to the decoder.
         """
         cross_attention_bias = base_tensor.clone()
-        if self.gen_args.cross_attention_bias == 1:
+        if self.gen_args.cross_attention_bias_value == 1:
             return cross_attention_bias
         else:
-            if not self.gen_args.cross_attention_mode:
+            if not self.gen_args.bias_profile:
                 return None
 
-            elif self.gen_args.cross_attention_mode == 'knowledge':
+            elif self.gen_args.bias_profile == 'knowledge': # see description in paper (p. 5)
                 if len(cross_attention_bias.size()) == 1: # single example
-                    cross_attention_bias[1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias
+                    cross_attention_bias[1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias_value
                 else:
                     # handle a batch of examples (note, each example receives the same bias)
-                    cross_attention_bias[:, 1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias
+                    cross_attention_bias[:, 1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias_value
+            
+            elif self.gen_args.bias_profile == 'dialog': # see description in paper (p. 5)
+                if len(cross_attention_bias.size()) == 1: # single example
+                    cross_attention_bias[self.data_args.knowledge_bucket_size+1:] = self.gen_args.cross_attention_bias_value
+                else:
+                    # handle a batch of examples (note, each example receives the same bias)
+                    cross_attention_bias[:, self.data_args.knowledge_bucket_size+1:] = self.gen_args.cross_attention_bias_value
+            
+            elif self.gen_args.bias_profile == 'gradual': # see description in paper (p. 5)
+                raise NotImplementedError('gradual bias profile not yet implemented')
             # TODO: arbitrary cross attention biasing
-            # elif self.gen_args.cross_attention_mode == 'positional':
+            # elif self.gen_args.bias_profile == 'positional':
             #     if not self.gen_args.cross_attention_bias_positions:
             #         raise RuntimeError(f"Expected cross attention bias positions but found {self.gen_args.cross_attention_bias_positions}")
             #     for start_position, end_position in self.gen_args.cross_attention_bias_positions:
             #         if len(cross_attention_bias.size()) == 1: # single example
-            #             cross_attention_bias[start_position:end_position] = self.gen_args.cross_attention_bias
+            #             cross_attention_bias[start_position:end_position] = self.gen_args.cross_attention_bias_value
             #         else:
             #             # handle a batch of examples (note, each example receives the same bias)
-            #             cross_attention_bias[:, start_position:end_position] = self.gen_args.cross_attention_bias
+            #             cross_attention_bias[:, start_position:end_position] = self.gen_args.cross_attention_bias_value
             else:
-                raise RuntimeError(f"Unknown cross attention mode {self.gen_args.cross_attention_mode}")
+                raise RuntimeError(f"Unknown cross attention mode {self.gen_args.bias_profile}")
                 
         return cross_attention_bias
 
@@ -449,7 +480,7 @@ class InferenceModel:
         Expands the attention bias vector (if provided) to the size of the context code (if provided)
         """
         if cross_attention_bias is not None and context_code is not None:
-            context_code_attention_bias = torch.ones([1, context_code.size()[0]], dtype=int, device=context_code.device) * self.gen_args.context_code_attention_bias
+            context_code_attention_bias = torch.ones([1, context_code.size()[0]], dtype=int, device=context_code.device) * self.gen_args.context_code_attention_bias_value
             context_code_attention_bias = context_code_attention_bias.repeat(cross_attention_bias.size()[0], 1) # repeat for each example in batch
             cross_attention_bias = torch.cat([context_code_attention_bias, cross_attention_bias], dim=-1)
             return cross_attention_bias
@@ -484,6 +515,7 @@ class InferenceModel:
                 for line in tqdm(f):
                     context_examples.append(line.strip())
             max_context_examples = min(max_context_examples, len(context_examples))
+            print(f'set random seed {seed}')
             random.seed(seed)
             context_examples = list(random.sample(context_examples, max_context_examples))
             logger.info(f'loaded {len(context_examples)} context examples')
@@ -494,9 +526,8 @@ class InferenceModel:
         return context_examples
 
 if __name__ == "__main__":
-
-    parser = HfArgumentParser((InferenceArguments, ModelArguments, DataTrainingArguments))
-    m = InferenceModel(parser)
+   
+    m = InferenceModel(sys.argv)
     predict_dataset = m.load_test_set_for_generation() # default: data/Topical-Chat/KGD/test_freq.json
     # predict_dataset2 = m.load_test_set_for_generation('data/Topical-Chat/KGD/test_rare.json')
 
