@@ -22,6 +22,7 @@ def set_args():
     # ap.add_argument("-p", "--profile", required=False, default=None, choices=['knowledge', 'dialog', 'gradual'], help="profile to evaluate (see p. 5 https://www.aaai.org/AAAI22Papers/AAAI-10187.HazarikaD.pdf)")
     ap.add_argument("-o", "--out_dir", type=str, default='results', required=False, help="path to the output directory")
     ap.add_argument("-d", "--debug", action="store_true", help="")
+    ap.add_argument("-s", "--seed", nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
     ap.add_argument(
         "--exp_id", 
         required=False, 
@@ -117,11 +118,11 @@ if __name__ == "__main__":
         gen_args.update(debug_config)
 
     results = []
-    for seed in [0, 42, 983, 8630, 284]:
+    for seed in args.seed:
         
         gen_args['seed'] = seed
 
-        # if you want to execute seperate processes from the cl, uncomment this        
+        # to execute seperate processes from the command line, uncomment this        
         # arg_string = print_args(gen_args)
         # print(f'python inference.py {arg_string}')
         # os.system(f'python inference.py {arg_string}')

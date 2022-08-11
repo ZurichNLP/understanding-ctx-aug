@@ -152,6 +152,8 @@ def score_kgd_generation(
     if dialogs is not None:
         results.update(compute_reference_based_metrics(sys_outputs, dialogs, 'd', verbose))
 
+    print(f'Scored {len(sys_outputs)} system outputs')
+
     return results
 
 
