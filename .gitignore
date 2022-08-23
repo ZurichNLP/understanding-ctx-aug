@@ -137,3 +137,5 @@ wandb/
 job_logs/
 environment.yml
 src_bkp/
+results/
+resources
