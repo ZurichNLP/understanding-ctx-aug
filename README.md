@@ -65,8 +65,11 @@ The script `train.py` is adapted from Hugging Face's `run_summarization.py` exam
 The script `run_finetuning.sh` provides the training commands used to train our models. For example, to re-run fine-tuning for BART-base, run
 
 ```
-. ./run_finetuning.sh && finetune_bart_base_for_kgd [GPU_ID]
+. ./finetune.sh && finetune_for_kgd [model-to-finetune] [output-dir]
 ```
+
+sbatch jobs/run_finetuning.sh -r /net/cephfs/data/tkew/projects/unsup_cntrl -m bart_small_Rl1Mr01Rt0Ps1In0Pl3Ma03
+
 
 ### Zero-shot Controlled Generation
 

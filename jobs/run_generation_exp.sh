@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
-#SBATCH --output=/data/tkew/projects/unsup_cntrl/job_logs/%j.out
+#SBATCH --output=%j.out
 
 # Author: T. Kew
 # sbatch jobs/run_generation_exp.sh -m resources/models/bart-base -e xa_knowledge

@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
-#SBATCH --output=/data/tkew/projects/unsup_cntrl/job_logs/%j.out
+#SBATCH --output=%j.out
 
 # Author: T. Kew
 # sbatch jobs/run_finetuning.sh -m roberta
@@ -13,15 +13,13 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-script_dir=$( dirname -- "$( readlink -f -- "$0"; )"; )
-base="$script_dir/.."
-cd "$base" || exit 1
+repo_base=''
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -m [model_type]"
+    >&2 echo "$script -r repo_base -m model_type"
 }
 
 # missing arguments that are required
@@ -33,8 +31,9 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "m:" flag; do
+while getopts "r:m:" flag; do
   case "${flag}" in
+    r) repo_base="$OPTARG" ;;
     m) model_type="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
@@ -42,44 +41,64 @@ while getopts "m:" flag; do
 done
 
 # checking required arguments
+if [[ -z $repo_base ]]; then
+    print_missing_arg "[-r repo_base]" "Base directory of the repository"
+    exit 1
+fi
+
 if [[ -z $model_type ]]; then
     print_missing_arg "[-m model_type]" "model"
     exit 1
 fi
 
+# cd to base dir
+cd "$repo_base" && echo $(pwd) || exit 1
+
 #######################################################################
 # ACTIVATE ENV
 #######################################################################
 
-source $base/start.sh
+source start.sh
 
 #######################################################################
 # LAUNCH EXPERIMENT
 #######################################################################
 
 # import functions
-source $base/run_finetuning.sh
+source finetune.sh
 
 case "$model_type" in
    
     "roberta") 
-        echo "Launching finetuning" && finetune_roberta_base_for_kgd
-        ;;
-    "bart") 
-        echo "Launching finetuning" && finetune_bart_base_for_kgd
-        ;;
+        echo "Launching finetuning..." && finetune_for_kgd "roberta-base" "resources/models/ft/roberta_base";;
+
+    "bart")
+        echo "Launching finetuning..." && finetune_for_kgd "facebook/bart-base" "resources/models/ft/bart_base";;
+
     "t5") 
-        echo "Launching finetuning" && finetune_t5_small_for_kgd
-        ;;
+         echo "Launching finetuning..." && finetune_for_kgd "t5-small" "resources/models/ft/t5_small";;
+
+    "bart_small_Rl1Mr01Rt0Ps1In0Pl3Ma03")
+        echo "Launching finetuning..." && finetune_for_kgd "resources/models/pt/hf_conv/bart_small/Rl1Mr01Rt0Ps1In0Pl3Ma03" "resources/models/ft/bart_small/Rl1Mr01Rt0Ps1In0Pl3Ma03";;
+    
+    "bart_small_Rl1Mr01Rt0Ps0In0Pl3Ma03")
+        echo "Launching finetuning..." && finetune_for_kgd "resources/models/pt/hf_conv/bart_small/Rl1Mr01Rt0Ps0In0Pl3Ma03" "resources/models/ft/bart_small/Rl1Mr01Rt0Ps0In0Pl3Ma03";;
+    
+    "bart_small_Rl1Mr0Rt0Ps1In0Pl3Ma0")
+        echo "Launching finetuning..." && finetune_for_kgd "resources/models/pt/hf_conv/bart_small/Rl1Mr0Rt0Ps1In0Pl3Ma0" "resources/models/ft/bart_small/Rl1Mr0Rt0Ps1In0Pl3Ma0";;
+    
+    "bart_small_Rl1Mr01Rt1Ps1In0Pl3Ma03")
+        echo "Launching finetuning..." && finetune_for_kgd "resources/models/pt/hf_conv/bart_small/Rl1Mr01Rt1Ps1In0Pl3Ma03" "resources/models/ft/bart_small/Rl1Mr01Rt1Ps1In0Pl3Ma03";;
+    
     "dummy_bart") 
-        echo "Launching finetuning" && dummy_finetune "facebook/bart-base"
-        ;;
+        echo "Launching finetuning..." && dummy_finetune "facebook/bart-base" "resources/models/ft/dummy";;
+    
     "dummy_t5") 
-        echo "Launching finetuning" && dummy_finetune "t5-small"
-        ;;
+        echo "Launching finetuning..." && dummy_finetune "t5-small" "resources/models/ft/dummy";;
+    
     "dummy_roberta") 
-        echo "Launching finetuning" && dummy_finetune "roberta-base"
-        ;;
+        echo "Launching finetuning..." && dummy_finetune "roberta-base" "resources/models/ft/dummy";;
+
     *) 
         echo "Model type not recognised: $model_type" && exit 1 
         ;;
