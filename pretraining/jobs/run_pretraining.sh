@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
-#SBATCH --output=/data/tkew/projects/pretraining_v1/job_logs/%j.out
+#SBATCH --output=%j.out
 
 # Author: T. Kew
 # sbatch jobs/run_pretraining.sh -p sm_baseline
@@ -13,9 +13,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-script_dir=$( dirname -- "$( readlink -f -- "$0"; )"; )
-base="$script_dir/../.."
-cd "$base" || exit 1
+repo_base=''
 
 # arguments that are not supported
 print_usage() {
@@ -33,8 +31,9 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "p:" flag; do
+while getopts "r:p:" flag; do
   case "${flag}" in
+    r) repo_base="$OPTARG" ;;
     p) pretraining_config="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
@@ -42,23 +41,30 @@ while getopts "p:" flag; do
 done
 
 # checking required arguments
+if [[ -z $repo_base ]]; then
+    print_missing_arg "[-r repo_base]" "Base directory of the repository"
+    exit 1
+fi
+
 if [[ -z $pretraining_config ]]; then
     print_missing_arg "[-p pretraining_config]" "pretraining config"
     exit 1
 fi
 
+# cd to base dir
+cd "$repo_base" && echo $(pwd) || exit 1
+
 #######################################################################
 # ACTIVATE ENV
 #######################################################################
 
-source "$base/start.sh"
-echo "CONDA ENV: $CONDA_DEFAULT_ENV"
+source start.sh
 
 #######################################################################
 # LAUNCH EXPERIMENT
 #######################################################################
 
-source "$base/pretraining/pretrain_bart_fairseq.sh"
+source pretraining/pretrain_bart_fairseq.sh
 
 case "$pretraining_config" in
    

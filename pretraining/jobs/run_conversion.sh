@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --time=2:00:00
+#SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --partition=generic
-#SBATCH --output=/data/tkew/projects/pretraining_v1/job_logs/%j.out
+#SBATCH --output=%j.out
 
 # Author: T. Kew
 # sbatch jobs/run_conversions.sh -i
@@ -16,15 +16,13 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-script_dir=$( dirname -- "$( readlink -f -- "$0"; )"; )
-base="$script_dir/../.."
-cd "$base" || exit 1
+repo_base=''
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -c checkpoint -o out_dir -t tokenizer"
+    >&2 echo "$script -r repo_base -c checkpoint -o out_dir -t tokenizer"
 }
 
 # missing arguments that are required
@@ -36,8 +34,9 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "c:t:o:" flag; do
+while getopts "r:c:t:o:" flag; do
   case "${flag}" in
+    r) repo_base="$OPTARG" ;;
     c) checkpoint_dir="$OPTARG" ;;
     o) out_dir="$OPTARG" ;;
     t) tokenizer="$OPTARG" ;;
@@ -47,6 +46,11 @@ while getopts "c:t:o:" flag; do
 done
 
 # checking required arguments
+if [[ -z $repo_base ]]; then
+    print_missing_arg "[-r repo_base]" "Base directory of the repository"
+    exit 1
+fi
+
 if [[ -z $checkpoint_dir ]]; then
     print_missing_arg "[-c checkpoint_dir]" "path to directory containing model (checkpoint_best.pt) trained with Fairseq"
     exit 1
@@ -62,19 +66,20 @@ if [[ -z $tokenizer ]]; then
     exit 1
 fi
 
+# cd to base dir
+cd "$repo_base" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
 #######################################################################
 
-source "$base/start.sh"
-echo "CONDA ENV: $CONDA_DEFAULT_ENV"
+source start.sh
 
 #######################################################################
 # LAUNCH
 #######################################################################
 
-python $base/pretraining/convert_fairseq_model_to_transformers.py \
+python pretraining/convert_fairseq_model_to_transformers.py \
     --checkpoint "$checkpoint_dir/checkpoint_best.pt" \
     --tokenizer "$tokenizer" \
     --out_dir "$out_dir"

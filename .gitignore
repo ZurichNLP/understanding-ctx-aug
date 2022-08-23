@@ -139,3 +139,5 @@ environment.yml
 src_bkp/
 results/
 resources
+# slurm logs
+*.out

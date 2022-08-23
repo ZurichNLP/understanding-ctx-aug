@@ -121,7 +121,7 @@ pretrain_bart() {
     rm -rf "$fairseq_save_dir" && mkdir -p "$fairseq_save_dir"
 
     fairseq-train "$data_dir" \
-        --save-dir "$save_dir" \
+        --save-dir "$fairseq_save_dir" \
         --arch "$model_config" \
         --wandb-project "bart-pretraining" \
         --seed 4 --fp16 \
@@ -169,7 +169,7 @@ pretrain_bart() {
     echo "$fairseq_save_dir"
 
     hf_save_dir="resources/models/pt/hf_conv/$model_config/$denoising_args"
-    convert_to_hf "$save_dir" "$data_dir/../tok/tokenizer/" "$hf_save_dir"
+    convert_to_hf "$fairseq_save_dir" "$data_dir/../tok/tokenizer/" "$hf_save_dir"
 
 }
 

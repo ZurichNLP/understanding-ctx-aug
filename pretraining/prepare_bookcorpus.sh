@@ -13,20 +13,20 @@ set -e
 while getopts "h?fd:" opt; do
   case "$opt" in
     h|\?)
-      echo "Usage: bash $0 -d <data_dir> [-f]" && exit 0
+      echo "Usage: bash $0 -d data_dir [-f]" && exit 0
         ;;
     f) FORCE_OVERWRITE="1"
         ;;
-    d) DATA=$OPTARG
+    d) DATA_DIR=$OPTARG
         ;;
   esac
 done
 
-[[ -z "$DATA" ]] && echo "data not provided, exiting" && exit 1
+[[ -z "$DATA_DIR" ]] && echo "data not provided, exiting" && exit 1
 
-RAW="$DATA/raw"
-BIN="$DATA/bin"
-TOK="$DATA/tok"
+RAW="$DATA_DIR/raw"
+BIN="$DATA_DIR/bin"
+TOK="$DATA_DIR/tok"
 
 # Run these checks first to make sure we're not unintentionally overwriting anything
 { [ -d "$RAW" ] && [ -z "$FORCE_OVERWRITE" ]; } && echo "tmp data exists, exiting" && exit 1
@@ -41,7 +41,7 @@ echo ""
 echo "Extracting sentences from books..."
 echo ""
 python make_cleaned_split_sentlines.py \
-    "$DATA/epubtxt/" \
+    "$DATA_DIR/epubtxt/" \
     "$RAW" \
     100
 
