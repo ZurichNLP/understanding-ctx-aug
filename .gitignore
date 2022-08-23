@@ -134,3 +134,6 @@ scratch/
 models
 src/
 wandb/
+job_logs/
+environment.yml
+src_bkp/

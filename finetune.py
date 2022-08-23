@@ -46,6 +46,7 @@ from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
     set_seed,
+    EncoderDecoderModel,
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, is_offline_mode, send_example_telemetry
@@ -293,7 +294,7 @@ class DataTrainingArguments:
     )
 
     early_stopping_patience: Optional[int] = field(
-        default=5,
+        default=3,
         metadata={
             "help": "number of eval steps to run before terminating due to no improvement"
         },
@@ -531,29 +532,52 @@ def main():
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
-    config = AutoConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
-        cache_dir=model_args.cache_dir,
-        use_fast=model_args.use_fast_tokenizer,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
+    if model_args.model_name_or_path in ['bert-base', 'roberta-base']:
+        model = EncoderDecoderModel.from_encoder_decoder_pretrained(model_args.model_name_or_path, model_args.model_name_or_path, tie_encoder_decoder=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
+        model.config.decoder_start_token_id = tokenizer.cls_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.config.bos_token_id = tokenizer.cls_token_id
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.vocab_size = model.config.decoder.vocab_size
+        
+        model.encoder.resize_token_embeddings(len(tokenizer))
+        model.decoder.resize_token_embeddings(len(tokenizer))
 
-    model.resize_token_embeddings(len(tokenizer))
+        # config params needed for generation
+        model.config.vocab_size = model.config.decoder.vocab_size
+        model.config.max_length = 128
+        model.config.min_length = 2
+        model.config.no_repeat_ngram_size = 3
+        model.config.early_stopping = True
+        model.config.length_penalty = 1.0
+        model.config.num_beams = 4
+
+    else:
+
+        config = AutoConfig.from_pretrained(
+            model_args.config_name if model_args.config_name else model_args.model_name_or_path,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
+            cache_dir=model_args.cache_dir,
+            use_fast=model_args.use_fast_tokenizer,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+
+        model.resize_token_embeddings(len(tokenizer))
 
     if model.config.decoder_start_token_id is None and isinstance(tokenizer, (MBartTokenizer, MBartTokenizerFast)):
         if isinstance(tokenizer, MBartTokenizer):
@@ -770,7 +794,6 @@ def main():
                     desc="Running tokenizer on prediction dataset",
                 )
 
-    # breakpoint()
     if training_args.do_train and data_args.persist_datasets:
         train_dataset.to_json(Path(training_args.output_dir) / "train_dataset.json")
         eval_dataset.to_json(Path(training_args.output_dir) / "eval_dataset.json")

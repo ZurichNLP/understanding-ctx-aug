@@ -29,7 +29,7 @@ python -m ipykernel install --user --name=unsup_ctrl
 
 Experiments in the original paper mostly use the Topical Chat dataset ([https://m.media-amazon.com/images/G/01/amazon.jobs/3079_Paper._CB1565131710_.pdf](Gopalakrishnan_et_al_2019)). This dataset can be found at [https://github.com/alexa/Topical-Chat]
 
-To prepare the data, do the following:
+To download the data for fine-tuning, run
 
 ```
 mkdir data
@@ -48,7 +48,7 @@ pip3 install -r requirements.txt
 python3 build.py  --reddit_client_id CLIENT_ID --reddit_client_secret CLIENT_SECRET --reddit_user_agent USER_AGENT
 ```
 
-This build takes around 1 hour. Once completed, we can prepare the data for training according to the desctiption provided in Hazarika et al., (2021)with the following command:
+This build takes around 1 hour. Once completed, we can prepare the data for training according to the desctiption provided in Hazarika et al., (2021) with the following command:
 
 ```
 bash prepare_data.sh
@@ -111,11 +111,11 @@ python evaluation/eval.py output_file [--references_file (e.g., test_freq.json)]
 ### Reproduction of paper experiments
 
 ```
-python run_experiments.py -m models/bart-base --exp_id baseline
-python run_experiments.py -m models/bart-base --exp_id xa_knowledge
+python run_generation.py -m models/bart-base --exp_id baseline
+python run_generation.py -m models/bart-base --exp_id xa_knowledge
 
-python run_experiments.py -m models/t5-small --exp_id baseline
-python run_experiments.py -m models/t5-small --exp_id qu_ctxt_aug
+python run_generation.py -m models/t5-small --exp_id baseline
+python run_generation.py -m models/t5-small --exp_id qu_ctxt_aug
 ```
 
 <!-- **TODO**

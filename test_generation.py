@@ -26,7 +26,7 @@ def generate(inputs, model, tokenizer, beam_size=5, verbose=False):
     # inputs = tokenizer(sentences, padding=True, return_tensors='pt').to(model.device)
     # check_uniqueness(input_ids['input_ids'])
     
-    decoder_kwargs = {
+    kwargs = {
         'cross_attention_bias': inputs["cross_attention_bias"].to(model.device) if "cross_attention_bias" in inputs else None,
         'context_code': inputs["context_code"].to(model.device) if "context_code" in inputs else None,
     }
@@ -37,7 +37,7 @@ def generate(inputs, model, tokenizer, beam_size=5, verbose=False):
         num_beams=beam_size,
         num_return_sequences=1, 
         max_length=128,
-        decoder_kwargs=decoder_kwargs,
+        decoder_kwargs=kwargs,
         )
     outputs = tokenizer.batch_decode(outputs_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
     return outputs

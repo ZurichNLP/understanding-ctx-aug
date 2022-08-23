@@ -24,7 +24,7 @@
 NOTE: due to different handling of <speaker1> and <speaker2> tags, our input lengths may differ slightly.
 
 Example Usage:
-    python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test_freq
+    python prepare_topical_chat_dataset.py --data_dir resources/data/Topical-Chat --split test_freq
 
 
 """

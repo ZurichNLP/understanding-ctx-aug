@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 def set_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--corpus_file', type=str, default='data/Topical-Chat/KGD/train.json', help='dataset name')
+    ap.add_argument('--corpus_file', type=str, default='resources/data/Topical-Chat/KGD/train.json', help='dataset name')
     ap.add_argument('--outfile', type=str, required=True, help='output file name')
     ap.add_argument('--max_contexts', type=int, default=None, help='max number of contexts')
     return ap.parse_args()

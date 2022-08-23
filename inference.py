@@ -133,11 +133,6 @@ class InferenceArguments:
             "A bias of 0 acts similarly to setting a custom attention mask for the cross attention."}
     )
 
-    # cross_attention_type: str = field(
-    #     default='uniform',
-    #     metadata={"help": ""}
-    # )
-
     context_augmentation_examples: str = field(
         default='',
         metadata={"help": "source for context examples if using context augmentation as described by Hazarika et al., 2021. "
@@ -383,7 +378,7 @@ class InferenceModel:
             outfile += f'_tk={self.gen_args.top_k}'
             outfile += f'_tp={self.gen_args.top_p}'
             if self.gen_args.cross_attention_bias_value != 1: # default value = baseline
-                outfile += f'_xatt={self.gen_args.cross_attention_bias_value}-{self.gen_args.cross_attention_type}-{self.gen_args.bias_profile}'
+                outfile += f'_xatt={self.gen_args.cross_attention_bias_value}-{self.gen_args.bias_profile}'
             if self.gen_args.context_augmentation_examples: # default no context augmentation = baseline
                 outfile += f'_ctxt={self.gen_args.context_code_attention_bias_value}-{Path(self.gen_args.context_augmentation_examples).stem}-{self.gen_args.max_context_examples}'
             outfile += '.txt'
@@ -443,15 +438,21 @@ class InferenceModel:
 
             elif self.gen_args.bias_profile == 'knowledge': # see description in paper (p. 5)
                 if len(cross_attention_bias.size()) == 1: # single example
+                    # we offset by 1 to account for the bos token which is not given biased attention
+                    # we also add 1 to the pre-defined bucket size since :n means up to but not including n
                     cross_attention_bias[1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias_value
                 else:
+                    # we offset by 1 to account for the bos token which is not given biased attention
+                    # we also add 1 to the pre-defined bucket size since :n means up to but not including n
                     # handle a batch of examples (note, each example receives the same bias)
                     cross_attention_bias[:, 1:self.data_args.knowledge_bucket_size+1] = self.gen_args.cross_attention_bias_value
             
             elif self.gen_args.bias_profile == 'dialog': # see description in paper (p. 5)
                 if len(cross_attention_bias.size()) == 1: # single example
+                    # we add 1 to the pre-defined bucket size to account for the bos token
                     cross_attention_bias[self.data_args.knowledge_bucket_size+1:] = self.gen_args.cross_attention_bias_value
                 else:
+                    # we add 1 to the pre-defined bucket size to account for the bos token
                     # handle a batch of examples (note, each example receives the same bias)
                     cross_attention_bias[:, self.data_args.knowledge_bucket_size+1:] = self.gen_args.cross_attention_bias_value
             
@@ -528,8 +529,8 @@ class InferenceModel:
 if __name__ == "__main__":
    
     m = InferenceModel(sys.argv)
-    predict_dataset = m.load_test_set_for_generation() # default: data/Topical-Chat/KGD/test_freq.json
-    # predict_dataset2 = m.load_test_set_for_generation('data/Topical-Chat/KGD/test_rare.json')
+    predict_dataset = m.load_test_set_for_generation() # default: resources/data/Topical-Chat/KGD/test_freq.json
+    # predict_dataset2 = m.load_test_set_for_generation('resources/data/Topical-Chat/KGD/test_rare.json')
 
     # cross attention generation
     outputs = m.generate_KGD(predict_dataset)

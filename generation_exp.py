@@ -13,8 +13,6 @@ import torch
 from inference import InferenceModel
 from evaluation.eval import score_kgd_generation
 
-# TODO: check seeding!
-
 def set_args():
 
     ap = argparse.ArgumentParser()
@@ -22,11 +20,11 @@ def set_args():
     # ap.add_argument("-p", "--profile", required=False, default=None, choices=['knowledge', 'dialog', 'gradual'], help="profile to evaluate (see p. 5 https://www.aaai.org/AAAI22Papers/AAAI-10187.HazarikaD.pdf)")
     ap.add_argument("-o", "--out_dir", type=str, default='results', required=False, help="path to the output directory")
     ap.add_argument("-d", "--debug", action="store_true", help="")
-    ap.add_argument("-s", "--seed", nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
+    ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
     ap.add_argument(
         "--exp_id", 
         required=False, 
-        default=None, 
+        default='baseline', 
         choices=[
             "baseline",
             "xa_knowledge",
@@ -37,7 +35,6 @@ def set_args():
         ],
         help="experiment id"
         )
-    # ap.add_argument("-d", "--debug", action="store_true", help="")
     return ap.parse_args()
 
 def get_best_checkpoint(model_dir):
@@ -49,7 +46,7 @@ def get_best_checkpoint(model_dir):
 
 
 topical_chat_data_config = {
-    "test_file": "data/Topical-Chat/KGD/test_freq.json",
+    "test_file": "resources/data/Topical-Chat/KGD/test_freq.json",
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "knowledge",
@@ -83,7 +80,7 @@ experiment_configs = {
         "bias_profile": "dialog",
     },
     "qu_ctxt_aug": {
-        "context_augmentation_examples": "data/Topical-Chat/KGD/contexts/questions.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     }
@@ -100,7 +97,7 @@ if __name__ == "__main__":
     
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     outfile = Path(args.out_dir) / f'{Path(args.model_dir).stem}-{args.exp_id}.csv'
-    if outfile.exists():
+    if outfile.exists() and not args.debug:
         print(f'[!] Overwriting {outfile}')
 
     checkpoint = get_best_checkpoint(args.model_dir)
@@ -128,23 +125,27 @@ if __name__ == "__main__":
         # os.system(f'python inference.py {arg_string}')
         
         m = InferenceModel(gen_args)
-        predict_dataset = m.load_test_set_for_generation() # default: data/Topical-Chat/KGD/test_freq.json
+        predict_dataset = m.load_test_set_for_generation() # default: resources/data/Topical-Chat/KGD/test_freq.json
         outputs = m.generate_KGD(predict_dataset)
         outputs = [o[0] for o in outputs] # take only the first output for each input (in case of multiple return sequences)
         
-        scored = score_kgd_generation(
-            outputs, 
-            targets=[[i] for i in predict_dataset['target']],
-            knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
-            dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
-            verbose=True if args.debug else False,
-            )
-                
-        experiment_result = {**gen_args, **scored}
-        results.append(experiment_result)
-    
-    df = pd.DataFrame(results)    
-    df.to_csv(outfile, index=False)
+        if not args.debug:
+            scored = score_kgd_generation(
+                outputs, 
+                targets=[[i] for i in predict_dataset['target']],
+                knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
+                dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                verbose=True if args.debug else False,
+                )
+            
+            experiment_result = {**gen_args, **scored}
+            results.append(experiment_result)
+        
+            df = pd.DataFrame(results)    
+            df.to_csv(outfile, index=False)
+        else:
+            for i, o in enumerate(outputs):
+                print(f'{i}: {o}')
 
         
 
