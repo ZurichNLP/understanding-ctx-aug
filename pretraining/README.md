@@ -8,6 +8,8 @@ We opt for the original Fairseq implementation for pre-training and use a Huggin
 
 ## Steps to reproduce
 
+For simplicity, first create a symlink to the resources folder containing models and data directories.
+
 #### 1. Download Data
 
 We use the version of Bookcorpus collected by Shawn Presser (https://twitter.com/theshawwn/status/1301852133319294976). To download, run:
