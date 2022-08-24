@@ -59,13 +59,13 @@ parse_denoising_args() {
 get_denoising_args_string() {
     d_args=$1
     # returns an ID string for the denoised pretraining run
-    d_args=${d_args/--replace-length=/Rl}
-    d_args=${d_args/--mask-random=/Mr}
-    d_args=${d_args/--rotate=/Rt}
-    d_args=${d_args/--permute-sentences=/Ps}
-    d_args=${d_args/--poisson-lambda=/Pl}
-    d_args=${d_args/--insert=/In}
-    d_args=${d_args/--mask=/Ma}
+    d_args=${d_args/--replace-length=/rl}
+    d_args=${d_args/--mask-random=/_mr}
+    d_args=${d_args/--rotate=/_rt}
+    d_args=${d_args/--permute-sentences=/_ps}
+    d_args=${d_args/--insert=/_in}
+    d_args=${d_args/--poisson-lambda=/_pl}
+    d_args=${d_args/--mask=/_ma}
     d_args=$(echo "${d_args}" | sed "s/\.0//g" | sed "s/ //g" | sed "s/\.//g")
     
     echo "$d_args"
@@ -101,7 +101,7 @@ pretrain_bart() {
     # get an ID string for the denoised pretraining run
     denoising_args=$(get_denoising_args_string "${replace_length} ${mask_random} ${rotate} ${permute_sentences} ${insert} ${poisson_lambda} ${mask}")
     
-    fairseq_save_dir="resources/models/pt/fairseq/$model_config/$denoising_args"
+    fairseq_save_dir="resources/models/pt/fairseq/${model_config}-${denoising_args}"
     
     echo ""
     echo -e "model_config:\t\t$model_config"
@@ -153,7 +153,6 @@ pretrain_bart() {
         --log-interval 1000 `# log every N updates` \
         --save-interval 1 `# save every N epochs also runs validation, so validation-interval == save-interval` \
         --save-interval-updates 5000 `# save every N updates also runs validation, so validation-interval-updates == save-interval-updates` \
-        --keep-interval-updates 1 \
         --num-workers 4 `# subprocesses to use for data loading` \
         --task denoising `# bart's denoising task` \
         --mask-length span-poisson `# ["subword", "word", "span-poisson"]` \
@@ -164,11 +163,11 @@ pretrain_bart() {
         "$insert"`# insert this percentage of additional random tokens` \
         "$poisson_lambda" `# defined in paper as lambda=3` \
         "$mask" `# portion of words/subwords that will be masked` \
-        &> "$fairseq_save_dir/train.log"
+        | tee "$fairseq_save_dir/train.log"
 
     echo "$fairseq_save_dir"
 
-    hf_save_dir="resources/models/pt/hf_conv/$model_config/$denoising_args"
+    hf_save_dir="resources/models/pt/hf_conv/${model_config}-${denoising_args}"
     convert_to_hf "$fairseq_save_dir" "$data_dir/../tok/tokenizer/" "$hf_save_dir"
 
 }

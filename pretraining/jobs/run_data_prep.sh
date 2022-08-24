@@ -14,7 +14,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base=''
+repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 
 # arguments that are not supported
 print_usage() {
@@ -52,8 +52,8 @@ if [[ -z $data_dir ]]; then
     exit 1
 fi
 
-# cd to base dir
-cd "$repo_base" && echo $(pwd) || exit 1
+# cd to base dir/pretraining
+cd "$repo_base/pretraining" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
@@ -65,4 +65,4 @@ source start.sh
 # LAUNCH JOB
 #######################################################################
 
-bash pretraining/data_prep/prepare_bookcorpus.sh -d "$data_dir"
+bash prepare_bookcorpus.sh -d "$data_dir"

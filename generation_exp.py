@@ -2,14 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import argparse
 from typing import List, Dict, Optional, Union
 from pathlib import Path
 import pandas as pd
-import gc
 
-import torch
 from inference import InferenceModel
 from evaluation.eval import score_kgd_generation
 
@@ -17,7 +14,6 @@ def set_args():
 
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--model_dir", type=str, required=True, help="path to the finetuned model folder")
-    # ap.add_argument("-p", "--profile", required=False, default=None, choices=['knowledge', 'dialog', 'gradual'], help="profile to evaluate (see p. 5 https://www.aaai.org/AAAI22Papers/AAAI-10187.HazarikaD.pdf)")
     ap.add_argument("-o", "--out_dir", type=str, default='results', required=False, help="path to the output directory")
     ap.add_argument("-d", "--debug", action="store_true", help="")
     ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")

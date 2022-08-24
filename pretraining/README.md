@@ -35,6 +35,15 @@ sbatch jobs/run_data_prep.sh -r /net/cephfs/data/tkew/projects/unsup_cntrl -d re
 
 Using the custom `bart-small` config, you can pre-train with different configs defined in `jobs/run_pretraining.sh`. Note, We also include conversion to Hugging Face after pre-training.
 
+The main parameters for denoising objectives are:
+- `replace-length` : 0 = no mask, 1 = 1 x `<mask>` for m tokens, -1 `<mask>` for each token, baseline=1
+- `rotate`: document rotation: not used in final BART models, baseline=0.0
+- `mask-random`: instead of using `<mask>`, use random token this often, baseline=0.1
+- `permute-sentences`: entence permutation: portion of sentences that are randomly shuffled in batch, baseline=1.0
+- `insert`: insert this percentage of additional random tokens, baseline=0.0
+- `poisson-lambda`: defined in paper as lambda=3, baseline=3.0
+- `mask`: portion of words/subwords that will be masked, baseline=0.3
+
 ```bash
 sbatch jobs/run_pretraining.sh -r /net/cephfs/data/tkew/projects/unsup_cntrl -p sm_baseline
 # configs: sm_baseline, sm_no_permute, sm_no_masking, sm_w_rotate

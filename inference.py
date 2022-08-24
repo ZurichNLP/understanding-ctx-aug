@@ -29,7 +29,7 @@ from transformers import (
     set_seed,
 )
 
-from train import tokenize_function, DataTrainingArguments, ModelArguments
+from finetune import tokenize_function, DataTrainingArguments, ModelArguments
 
 # Setup logging
 logger = logging.getLogger(__name__)

@@ -20,6 +20,12 @@
 
 # pip install -r requirements.txt
 
+# # for finetuning data preprocessing
+# python -m spacy download en_core_web_sm
+
+# # to run notebook from a server with ipython kernels, run
+# python -m ipykernel install --user --name=unsup_ctrl
+
 #################
 ## alternatively:
 #################

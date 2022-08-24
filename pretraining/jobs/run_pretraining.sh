@@ -13,7 +13,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base=''
+repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 
 # arguments that are not supported
 print_usage() {
@@ -51,8 +51,8 @@ if [[ -z $pretraining_config ]]; then
     exit 1
 fi
 
-# cd to base dir
-cd "$repo_base" && echo $(pwd) || exit 1
+# cd to base dir/pretraining
+cd "$repo_base/pretraining" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
@@ -64,14 +64,14 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-source pretraining/pretrain_bart_fairseq.sh
+source pretrain_bart_fairseq.sh
 
 case "$pretraining_config" in
    
     "sm_baseline") 
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
-            bart_small \
+            "bart_small" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.1 \
@@ -83,7 +83,7 @@ case "$pretraining_config" in
     "sm_no_permute") 
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
-            bart_small \
+            "bart_small" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.1 \
@@ -95,7 +95,7 @@ case "$pretraining_config" in
     "sm_no_masking") 
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
-            bart_small \
+            "bart_small" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.0 \
@@ -107,7 +107,7 @@ case "$pretraining_config" in
     "sm_w_rotate") 
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
-            bart_small \
+            "bart_small" \
             --replace-length 1 \
             --rotate 1.0 \
             --mask-random 0.1 \

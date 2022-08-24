@@ -1,13 +1,14 @@
 #!/bin/bash
-#SBATCH --time=10:00:00
+#SBATCH --time=2:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4G
-#SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=generic
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_generation_exp.sh  -m resources/models/ft/bart_small-rl1_mr01_rt1_ps1_in0_pl3_ma03 -e xa_knowledge
+# sbatch jobs/run_data_prep.sh -d resources/data/Topical-Chat
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
@@ -19,7 +20,7 @@ repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -m model_path [-e exp_id]"
+    >&2 echo "$script -r repo_base -d data_dir"
 }
 
 # missing arguments that are required
@@ -31,11 +32,10 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:e:" flag; do
+while getopts "r:d:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
-    m) model_path="$OPTARG" ;;
-    e) exp_id="$OPTARG" ;;
+    d) data_dir="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -43,16 +43,16 @@ done
 
 # checking required arguments
 if [[ -z $repo_base ]]; then
-    print_missing_arg "[-r repo_base]" "repo base"
+    print_missing_arg "[-r repo_base]" "Base directory of the repository"
     exit 1
 fi
 
-if [[ -z $model_path ]]; then
-    print_missing_arg "[-m model_path]" "model"
+if [[ -z $data_dir ]]; then
+    print_missing_arg "[-d data_dir]"
     exit 1
 fi
 
-# cd to base dir
+# cd to base dir/pretraining
 cd "$repo_base" && echo $(pwd) || exit 1
 
 #######################################################################
@@ -62,20 +62,12 @@ cd "$repo_base" && echo $(pwd) || exit 1
 source start.sh
 
 #######################################################################
-# LAUNCH EXPERIMENT
+# LAUNCH JOB
 #######################################################################
 
-if [[ -z $exp_id ]]; then
-    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug" "xa_knowledge+qu_ctxt_aug" "xa_dialog+qu_ctxt_aug"; do
-        echo "Running experiment $exp_id"
-        python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
-    done
-
-
-else
-    python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
-fi
-
-echo ""
-echo "Done."
-echo ""
+for split in valid_rare valid_freq test_freq test_rare train; do
+    python prepare_topical_chat_dataset.py \
+        --data_dir "$data_dir" \
+        --split "$split" \
+        --save_dir "$data_dir/KGD"
+done

@@ -16,7 +16,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base=''
+repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 
 # arguments that are not supported
 print_usage() {
@@ -66,8 +66,8 @@ if [[ -z $tokenizer ]]; then
     exit 1
 fi
 
-# cd to base dir
-cd "$repo_base" && echo $(pwd) || exit 1
+# cd to base dir/pretraining
+cd "$repo_base/pretraining" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
@@ -79,7 +79,7 @@ source start.sh
 # LAUNCH
 #######################################################################
 
-python pretraining/convert_fairseq_model_to_transformers.py \
+python convert_fairseq_model_to_transformers.py \
     --checkpoint "$checkpoint_dir/checkpoint_best.pt" \
     --tokenizer "$tokenizer" \
     --out_dir "$out_dir"

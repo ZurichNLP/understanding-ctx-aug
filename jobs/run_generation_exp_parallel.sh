@@ -1,13 +1,14 @@
 #!/bin/bash
-#SBATCH --time=10:00:00
+#SBATCH --time=2:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
+#SBATCH --array=0-5
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_generation_exp.sh  -m resources/models/ft/bart_small-rl1_mr01_rt1_ps1_in0_pl3_ma03 -e xa_knowledge
+# sbatch jobs/run_generation_exp_parallel.sh -m resources/models/ft/bart_small-rl1_mr01_rt1_ps1_in0_pl3_ma03
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
@@ -19,7 +20,7 @@ repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -m model_path [-e exp_id]"
+    >&2 echo "$script [-r repo_base] -m model_path"
 }
 
 # missing arguments that are required
@@ -31,11 +32,10 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:e:" flag; do
+while getopts "r:m:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
-    e) exp_id="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -65,16 +65,10 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-if [[ -z $exp_id ]]; then
-    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug" "xa_knowledge+qu_ctxt_aug" "xa_dialog+qu_ctxt_aug"; do
-        echo "Running experiment $exp_id"
-        python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
-    done
+exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug" "xa_knowledge+qu_ctxt_aug" "xa_dialog+qu_ctxt_aug")
 
-
-else
-    python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
-fi
+# launches a single experiment job for each exp_id in parallel
+srun python generation_exp.py --model_dir "$model_path" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
 
 echo ""
 echo "Done."
