@@ -3,29 +3,20 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional
-import re
 from pathlib import Path
 import random
 
 from tqdm import tqdm
 import datasets
-import nltk  # Here to have a nice missing dependency error message early on
 import numpy as np
 from datasets import load_dataset, load_metric
 
 import torch
-import transformers
 from transformers import (
     AutoModelForSeq2SeqLM,
+    # EncoderDecoderModel,
     AutoTokenizer,
-    DataCollatorForSeq2Seq,
     HfArgumentParser,
-    MBart50Tokenizer,
-    MBart50TokenizerFast,
-    MBartTokenizer,
-    MBartTokenizerFast,
-    Seq2SeqTrainer,
-    Seq2SeqTrainingArguments,
     set_seed,
 )
 
@@ -134,7 +125,7 @@ class InferenceArguments:
     )
 
     context_augmentation_examples: str = field(
-        default='',
+        default=None,
         metadata={"help": "source for context examples if using context augmentation as described by Hazarika et al., 2021. "
         "If a file path is provided, example sentences are expected to be one per line"}
     )
@@ -174,6 +165,11 @@ class InferenceArguments:
         metadata={"help": "Print progress"}
     )
 
+    debug: bool = field(
+        default=False,
+        metadata={"help": "Print debug information"}
+    )
+
 class InferenceModel:
 
     def __init__(self, args):
@@ -198,6 +194,7 @@ class InferenceModel:
         if self.gen_args.checkpoint_dir is not None:
             self.model_path = str(Path(self.model_args.model_name_or_path) / self.gen_args.checkpoint_dir)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_path)
+        # self.model = EncoderDecoderModel.from_encoder_decoder_pretrained(self.model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
 
         self.model = self.model.eval()
@@ -270,8 +267,8 @@ class InferenceModel:
             current_batch['target'].append(example.get('target'))
 
             # get cross attention biases for each individual example (would be fast to do for a batch if all items are the same)
-            if self.gen_args.cross_attention_bias_value != 1:
-                current_batch['cross_attention_bias'].append(self.construct_cross_attention_bias(example['attention_mask']))
+            # if self.gen_args.cross_attention_bias_value != 0:
+            current_batch['cross_attention_bias'].append(self.construct_cross_attention_bias(example['attention_mask']))
             if context_code is not None:
                 current_batch['context_code'].append(context_code)
 
@@ -344,11 +341,13 @@ class InferenceModel:
         # pack outputs into a list of lists, i.e. batch_len x num_return_seqs
         outputs = [outputs[i:i+self.gen_args.num_return_sequences] for i in range(0, len(outputs), self.gen_args.num_return_sequences)]
 
-        # if not decdoing the full test set, assume debug run and print to stdout
-        if self.data_args.max_predict_samples is not None:
+        # if not decdoing the full test set and is debug run, print to stdout
+        if self.data_args.max_predict_samples is not None and self.gen_args.debug:
             for src, gen in zip(src_seqs, outputs):
                 print()
-                print(src, '\t', ' \t'.join(gen))
+                print(f'Input:\t{src}')
+                for i, text in enumerate(gen):
+                    print(f'Output {i}:\t{text}')
 
         elif self.gen_args.write_to_file:
             outfile = self.get_outfile_name()
@@ -434,7 +433,11 @@ class InferenceModel:
             return cross_attention_bias
         else:
             if not self.gen_args.bias_profile:
-                return None
+                if self.gen_args.cross_attention_bias_value == 0:
+                    print(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}. WARNING: This will effectively set all cross attention weights to 0!')
+                else:
+                    print(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}.')
+                cross_attention_bias[:] = self.gen_args.cross_attention_bias_value
 
             elif self.gen_args.bias_profile == 'knowledge': # see description in paper (p. 5)
                 if len(cross_attention_bias.size()) == 1: # single example
@@ -484,16 +487,17 @@ class InferenceModel:
             context_code_attention_bias = torch.ones([1, context_code.size()[0]], dtype=int, device=context_code.device) * self.gen_args.context_code_attention_bias_value
             context_code_attention_bias = context_code_attention_bias.repeat(cross_attention_bias.size()[0], 1) # repeat for each example in batch
             cross_attention_bias = torch.cat([context_code_attention_bias, cross_attention_bias], dim=-1)
-            return cross_attention_bias
-        else:
-            return cross_attention_bias
+            return cross_attention_bias        
+        elif context_code is not None:
+            print(f"[!] You are using context code but not cross attention bias. This is not recommended. Use the default cross attention bias value of 1.")
+        return cross_attention_bias
 
     @staticmethod
-    def load_context_examples(context_file, max_context_examples=10, seed=42) -> Optional[List[str]]:
+    def load_context_examples(context_file: str, max_context_examples: int = 10, seed: int = 42) -> Optional[List[str]]:
         """
         Loads the context sentences from the given file.
         """
-        
+        print(context_file)
         if context_file == 'dummy':       
             context_examples = [
                 'Am I a teacher?',
@@ -510,7 +514,6 @@ class InferenceModel:
             logger.info(f'using {len(context_examples)} dummy context examples')
         
         elif Path(context_file).is_file():
-
             context_examples = []
             with open(context_file, 'r', encoding='utf8') as f:
                 for line in tqdm(f):
@@ -522,7 +525,7 @@ class InferenceModel:
             logger.info(f'loaded {len(context_examples)} context examples')
 
         else:
-            context_examples = None
+            raise RuntimeError(f'Failed to read file {context_file}!')
 
         return context_examples
 
