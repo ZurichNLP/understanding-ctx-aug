@@ -25,9 +25,10 @@ def set_args():
             "baseline",
             "xa_knowledge",
             "xa_dialog",
-            "qu_ctxt_aug",
-            "xa_knowledge+qu_ctxt_aug",
-            "xa_dialog+qu_ctxt_aug",
+            "qu_ctxt_aug5",
+            "qu_ctxt_aug1",
+            "xa_knowledge+qu_ctxt_aug5",
+            "xa_dialog+qu_ctxt_aug5",
         ],
         help="experiment id"
         )
@@ -64,6 +65,7 @@ debug_config = {
     "max_predict_samples": 5,
     "write_to_file": '',
     "verbose": True,
+    "debug": True,
 }
 
 experiment_configs = {
@@ -75,11 +77,16 @@ experiment_configs = {
         "cross_attention_bias_value": 5,
         "bias_profile": "dialog",
     },
-    "qu_ctxt_aug": {
+    "qu_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
-    }
+    },
+    "qu_ctxt_aug1": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions.txt",
+        "context_code_attention_bias_value": 1,
+        "max_context_examples": 10,
+    },
 }
 
 def print_args(args: Dict):

@@ -1,13 +1,19 @@
 #!/bin/bash
-#SBATCH --time=10:00:00
+#SBATCH --time=8:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=4G
-#SBATCH --gres=gpu:1
+#SBATCH --mem-per-cpu=8G
+#SBATCH --gres=gpu:Tesla-V100-32GB:1
 #SBATCH --partition=volta
 #SBATCH --output=%j.out
 
 # Author: T. Kew
 # sbatch jobs/run_generation_exp.sh  -m resources/models/ft/bart_small-rl1_mr01_rt1_ps1_in0_pl3_ma03 -e xa_knowledge
+
+# NOTE, for smaller models, you can parallelise the experiments with jobs/run_generation_exp_parallel.sh!
+# For larger models, parallelisation fails.
+# BART-base and T5-small generation experiments can be run on the volta partition with --gres=gpu:1
+# RoBERTA-base requires a larger GPU, e.g. --gres=gpu:Tesla-V100-32GB:1
+# Alternatively, you could use reduce the batch size used for generation...
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
@@ -66,12 +72,10 @@ source start.sh
 #######################################################################
 
 if [[ -z $exp_id ]]; then
-    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug" "xa_knowledge+qu_ctxt_aug" "xa_dialog+qu_ctxt_aug"; do
+    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5"; do
         echo "Running experiment $exp_id"
         python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
     done
-
-
 else
     python generation_exp.py --model_dir "$model_path" --exp_id "$exp_id"
 fi

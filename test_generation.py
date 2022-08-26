@@ -16,7 +16,7 @@ Dinosaurs used to roam the earth looking for food. Are you going to be a dinosau
 
 import sys
 from typing import List, Tuple, Dict, Optional
-from transformers import BartTokenizer, BartForConditionalGeneration
+from transformers import BartTokenizer, BartForConditionalGeneration, AutoTokenizer, AutoModelForConditionalGeneration
 import torch
 
 def generate(inputs, model, tokenizer, beam_size=5, verbose=False):
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     else:
         context_attn_weight = 1
 
-    tokenizer = BartTokenizer.from_pretrained(model_dir)
-    model = BartForConditionalGeneration.from_pretrained(model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForConditionalGeneration.from_pretrained(model_dir)
     model = model.eval()
     if torch.cuda.is_available():
         model = model.cuda()
