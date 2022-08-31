@@ -118,6 +118,11 @@ class InferenceArguments:
         metadata={"help": "Probability of top-p sampling"}
     )
 
+    # use_cross_attention_bias: bool = field(
+    #     default=False,
+    #     metadata={"help": "Use cross attention"}
+    # )
+
     cross_attention_bias_value: int = field(
         default=1,
         metadata={"help": "Value used to bias cross attention. Default = 1, i.e. no bias. "
@@ -267,7 +272,7 @@ class InferenceModel:
             current_batch['target'].append(example.get('target'))
 
             # get cross attention biases for each individual example (would be fast to do for a batch if all items are the same)
-            # if self.gen_args.cross_attention_bias_value != 0:
+            # if self.gen_args.use_cross_attention_bias:
             current_batch['cross_attention_bias'].append(self.construct_cross_attention_bias(example['attention_mask']))
             if context_code is not None:
                 current_batch['context_code'].append(context_code)
@@ -420,7 +425,10 @@ class InferenceModel:
             raise RuntimeError(f"Expected list of context example to encode but found {context_code}")
         context_inputs = self.tokenizer(context_examples, padding=True, return_tensors='pt')
         # get context code
-        context_code = self.model.get_encoder()(context_inputs['input_ids'].to(self.model.device), return_dict=True)['last_hidden_state'].mean(dim=0)#.unsqueeze(dim=0)
+        if context_inputs['input_ids'].shape[0] == 1:
+            context_code = self.model.get_encoder()(context_inputs['input_ids'].to(self.model.device), return_dict=True)['last_hidden_state'].mean(dim=0).squeeze(dim=0)
+        else:
+            context_code = self.model.get_encoder()(context_inputs['input_ids'].to(self.model.device), return_dict=True)['last_hidden_state'].mean(dim=0)#.unsqueeze(dim=0)
         logger.info(f'encoded {len(context_examples)} context examples')
         return context_code
 
@@ -512,7 +520,6 @@ class InferenceModel:
                 'Was he nice?',
                 ]
             logger.info(f'using {len(context_examples)} dummy context examples')
-        
         elif Path(context_file).is_file():
             context_examples = []
             with open(context_file, 'r', encoding='utf8') as f:

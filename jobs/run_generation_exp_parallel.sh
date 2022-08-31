@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=2:00:00
+#SBATCH --time=6:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:Tesla-V100-32GB:1
@@ -15,12 +15,13 @@
 #######################################################################
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+batch_size=120
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script [-r repo_base] -m model_path"
+    >&2 echo "$script [-r repo_base] -m model_path [-b batch_size]"
 }
 
 # missing arguments that are required
@@ -32,10 +33,11 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:" flag; do
+while getopts "r:m:b:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
+    b) batch_size="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -68,7 +70,7 @@ source start.sh
 exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5")
 
 # launches a single experiment job for each exp_id in parallel
-srun python generation_exp.py --model_dir "$model_path" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
+srun python generation_exp.py --model_dir "$model_path" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}" --batch_size $batch_size
 
 echo ""
 echo "Done."

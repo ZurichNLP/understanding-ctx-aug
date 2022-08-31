@@ -17,6 +17,7 @@ def set_args():
     ap.add_argument("-o", "--out_dir", type=str, default='results', required=False, help="path to the output directory")
     ap.add_argument("-d", "--debug", action="store_true", help="")
     ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
+    ap.add_argument("-b", "--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
     ap.add_argument(
         "--exp_id", 
         required=False, 
@@ -50,7 +51,7 @@ topical_chat_data_config = {
 }
 
 baseline_config = {
-    "batch_size": 120,
+    # "batch_size": 120,
     "max_length": 40,
     "do_sample": True,
     "top_p": 0.9,

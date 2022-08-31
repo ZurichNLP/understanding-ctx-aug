@@ -395,9 +395,11 @@ def tokenize_function(examples, tokenizer, **kwargs):
     # add bos and eos tokens to input sequence
     if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
         inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
-    else:
+    elif tokenizer.eos_token_id is not None:
         inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
-        
+    else: # if using BERT2BERT, we use the sep token as a stand-in for the eos token
+        inputs = [[tokenizer.sep_token_id] + inp_tok for inp_tok in inputs]
+
     model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
 
     # Setup the tokenizer for targets
@@ -532,13 +534,30 @@ def main():
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
-    if model_args.model_name_or_path in ['bert-base', 'roberta-base']:
+    
+    
+    # if model_args.model_name_or_path in ['bert-base-cased+gpt2']:
+    #     model = EncoderDecoderModel.from_encoder_decoder_pretrained("bert-base-cased", "gpt2", tie_encoder_decoder=True)
+    #     model_args.model_name_or_path = "bert-base-cased"
+    #     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
+    #     model.config.decoder_start_token_id = tokenizer.cls_token_id
+    #     model.config.pad_token_id = tokenizer.pad_token_id
+    #     model.config.bos_token_id = tokenizer.cls_token_id
+    #     model.config.eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else tokenizer.sep_token_id
+    #     # For this to work we need to do some magic to utilize both tokenizers...
+    #     # e.g. https://huggingface.co/patrickvonplaten/bert2gpt2-cnn_dailymail-fp16
+    #     model.config.vocab_size = model.config.decoder.vocab_size
+        
+    #     model.encoder.resize_token_embeddings(len(tokenizer))
+    #     model.decoder.resize_token_embeddings(len(tokenizer))
+
+    if model_args.model_name_or_path in ['bert-base-cased', 'roberta-base']:
         model = EncoderDecoderModel.from_encoder_decoder_pretrained(model_args.model_name_or_path, model_args.model_name_or_path, tie_encoder_decoder=True)
         tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
         model.config.decoder_start_token_id = tokenizer.cls_token_id
         model.config.pad_token_id = tokenizer.pad_token_id
         model.config.bos_token_id = tokenizer.cls_token_id
-        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else tokenizer.sep_token_id
         model.config.vocab_size = model.config.decoder.vocab_size
         
         model.encoder.resize_token_embeddings(len(tokenizer))
