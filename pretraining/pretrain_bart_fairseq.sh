@@ -93,7 +93,8 @@ pretrain_bart() {
 
     data_dir="$1" # "resources/data/books1/bin"
     model_config="$2" # bart_small
-    
+    task="$3"
+
     # parse arguments for denoising objectives
     #https://gist.github.com/jimratliff/d735a57eef05b650d4a17f10b7da64d9
     read -r replace_length mask_random rotate permute_sentences insert poisson_lambda mask <<< "$(parse_denoising_args "$@")"
@@ -101,12 +102,12 @@ pretrain_bart() {
     # get an ID string for the denoised pretraining run
     denoising_args=$(get_denoising_args_string "${replace_length} ${mask_random} ${rotate} ${permute_sentences} ${insert} ${poisson_lambda} ${mask}")
     
-    fairseq_save_dir="resources/models/pt/fairseq/${model_config}-${denoising_args}"
+    fairseq_save_dir="resources/models/pt/fairseq/${model_config}-${task}-${denoising_args}"
     
     echo ""
     echo -e "model_config:\t\t$model_config"
     echo ""
-    # echo -e "denoising_args:\t$denoising_args"
+    echo -e "task:\t\t\t$task"
     echo -e "replace-length:\t\t$replace_length"
     echo -e "mask-random:\t\t$mask_random"
     echo -e "rotate:\t\t\t$rotate"
@@ -125,7 +126,6 @@ pretrain_bart() {
         --arch "$model_config" \
         --wandb-project "bart-pretraining" \
         --seed 4 --fp16 \
-        --curriculum 1 `# don’t shuffle batches for first N epochs` \
         --lr 0.0004 `# adjust accordingly` \
         --optimizer adam \
         --lr-scheduler polynomial_decay `# linear (not in Fairseq) may improve budgeted training` \
@@ -154,7 +154,7 @@ pretrain_bart() {
         --save-interval 1 `# save every N epochs also runs validation, so validation-interval == save-interval` \
         --save-interval-updates 5000 `# save every N updates also runs validation, so validation-interval-updates == save-interval-updates` \
         --num-workers 4 `# subprocesses to use for data loading` \
-        --task denoising `# bart's denoising task` \
+        --task "$task" `# bart's denoising task` \
         --mask-length span-poisson `# ["subword", "word", "span-poisson"]` \
         "$replace_length" `# 0 = no mask, 1 = 1 x <mask> for m tokens, -1 <mask> for each token` \
         "$rotate" `# document rotation: not used in final BART models` \
@@ -167,8 +167,60 @@ pretrain_bart() {
 
     echo "$fairseq_save_dir"
 
-    hf_save_dir="resources/models/pt/hf_conv/${model_config}-${denoising_args}"
+    hf_save_dir="resources/models/pt/hf_conv/${model_config}-${task}-${denoising_args}"
     convert_to_hf "$fairseq_save_dir" "$data_dir/../tok/tokenizer/" "$hf_save_dir"
+
+}
+
+train_dummy() {
+
+    data_dir="resources/data/dummy_books1/bin"
+    model_config="bart_small"
+    save_dir="resources/models/pt/dummy_fairseq/$model_config"
+    rm -rf $save_dir && mkdir -p $save_dir
+
+    fairseq-train $data_dir \
+        --save-dir $save_dir \
+        --arch $model_config \
+        --seed 4 --fp16 \
+        --lr 0.0004 `# adjust accordingly` \
+        --optimizer adam \
+        --lr-scheduler polynomial_decay `# linear (not in Fairseq) may improve budgeted training` \
+        --total-num-update 1000 `# requried by polynomial_decay scheduler` \
+        --weight-decay 0.01 \
+        --criterion cross_entropy \
+        --dropout 0.1 \
+        --attention-dropout 0.1 \
+        --clip-norm 0.1 \
+        --share-all-embeddings `# defaults defined in bart-large architecture ` \
+        --encoder-learned-pos `# defaults defined in bart-large architecture ` \
+        --decoder-learned-pos `# defaults defined in bart-large architecture ` \
+        --skip-invalid-size-inputs-valid-test \
+        --log-format json \
+        --dataset-impl mmap \
+        --keep-interval-updates 1 \
+        --keep-best-checkpoints 1 \
+        --max-source-positions 256 `# restrict model input size for budgeted training` \
+        --max-target-positions 256 `# restrict model output size for budgeted training` \
+        --tokens-per-sample 256 `# size of each TokenBlockDataset (must be <= max-source-positions)` \
+        --max-tokens 4096 `# batch-size (must be >= max-source-positions)` \
+        --update-freq 4 `# effective batch size = max-tokens * update-freq ` \
+        --max-update 1000 \
+        --warmup-updates 100 \
+        --log-interval 100 `# log every N updates` \
+        --save-interval 1 `# save every N epochs` \
+        --save-interval-updates 100 `# save every N updates` \
+        --keep-interval-updates 1 \
+        --num-workers 0 `# subprocesses to use for data loading` \
+        --task denoising `# bart's denoising task` \
+        --mask-length span-poisson `# ["subword", "word", "span-poisson"]` \
+        --replace-length 1 `# 0 = no mask, 1 = 1 x <mask> for m tokens, -1 <mask> for each token` \
+        --rotate 0.0 `# document rotation: not used in final BART models` \
+        --mask-random 0.0 `# instead of using <mask>, use random token this often` \
+        --permute-sentences 1.0 `# sentence permutation: portion of sentences that are randomly shuffled in batch` \
+        --insert 0.0 `# insert this percentage of additional random tokens` \
+        --poisson-lambda 3.0 `# defined in paper as lambda=3` \
+        --mask 0.0 `# portion of words/subwords that will be masked`
 
 }
 

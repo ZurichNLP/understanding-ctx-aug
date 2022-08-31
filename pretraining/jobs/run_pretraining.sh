@@ -72,6 +72,7 @@ case "$pretraining_config" in
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
             "bart_small" \
+            "denoising" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.1 \
@@ -84,6 +85,7 @@ case "$pretraining_config" in
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
             "bart_small" \
+            "denoising" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.1 \
@@ -96,6 +98,7 @@ case "$pretraining_config" in
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
             "bart_small" \
+            "denoising" \
             --replace-length 1 \
             --rotate 0.0 \
             --mask-random 0.0 \
@@ -108,10 +111,63 @@ case "$pretraining_config" in
         echo "Launching pretraining..." && pretrain_bart \
             "resources/data/books1/bin" \
             "bart_small" \
+            "denoising" \
             --replace-length 1 \
             --rotate 1.0 \
             --mask-random 0.1 \
             --permute-sentences 1.0 \
+            --insert 0.0 \
+            --poisson-lambda 3.0 \
+            --mask 0.3 
+        ;;
+    "sm_no_permute_w_rotate") 
+        echo "Launching pretraining..." && pretrain_bart \
+            "resources/data/books1/bin" \
+            "bart_small" \
+            "denoising" \
+            --replace-length 1 \
+            --rotate 1.0 \
+            --mask-random 0.1 \
+            --permute-sentences 0.0 \
+            --insert 0.0 \
+            --poisson-lambda 3.0 \
+            --mask 0.3 
+        ;;
+    "sm_less_masking") 
+        echo "Launching pretraining..." && pretrain_bart \
+            "resources/data/books1/bin" \
+            "bart_small" \
+            "denoising" \
+            --replace-length 1 \
+            --rotate 0.0 \
+            --mask-random 0.1 \
+            --permute-sentences 1.0 \
+            --insert 0.0 \
+            --poisson-lambda 3.0 \
+            --mask 0.1 
+        ;;
+    "sm_less_perm") 
+        echo "Launching pretraining..." && pretrain_bart \
+            "resources/data/books1/bin" \
+            "bart_small" \
+            "denoising" \
+            --replace-length 1 \
+            --rotate 0.0 \
+            --mask-random 0.1 \
+            --permute-sentences 0.1 \
+            --insert 0.0 \
+            --poisson-lambda 3.0 \
+            --mask 0.3 
+        ;;
+    "sm_as_t5")
+        echo "Launching pretraining..." && pretrain_bart \
+            "resources/data/books1/bin" \
+            "bart_small" \
+            "denoising_t5" \
+            --replace-length 1 \
+            --rotate 0.0 \
+            --mask-random 0.0 \
+            --permute-sentences 0.0 \
             --insert 0.0 \
             --poisson-lambda 3.0 \
             --mask 0.3 
