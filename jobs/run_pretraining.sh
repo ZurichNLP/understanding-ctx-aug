@@ -7,19 +7,20 @@
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_pretraining.sh -p sm_baseline [-s seed]
+#  sbatch jobs/run_pretraining.sh -p sm_baseline [-s seed]
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+seed=4
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -p pretraining config [-s seed] [-r repo_base]"
+    >&2 echo "$script -p pretraining config  [-s seed] [-r repo_base]"
 }
 
 # missing arguments that are required
@@ -33,9 +34,9 @@ print_missing_arg() {
 # argument parser
 while getopts "r:p:s:" flag; do
   case "${flag}" in
-    s) seed="$OPTARG" ;;
     r) repo_base="$OPTARG" ;;
     p) pretraining_config="$OPTARG" ;;
+    s) seed="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -52,12 +53,8 @@ if [[ -z $pretraining_config ]]; then
     exit 1
 fi
 
-if [[ -z $seed ]]; then
-    seed=4 && echo "Using default seed: $seed"
-fi
-
-# cd to base dir/pretraining
-cd "$repo_base/pretraining" && echo $(pwd) || exit 1
+# cd to base dir
+cd "$repo_base" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
@@ -69,12 +66,12 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-source pretrain_bart_fairseq.sh
+source pretraining/pretrain_bart_fairseq.sh
 
 case "$pretraining_config" in
    
     "sm_baseline") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -87,7 +84,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_no_permute") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -100,7 +97,7 @@ case "$pretraining_config" in
             --mask 0.3
         ;;
     "sm_no_masking") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -113,7 +110,7 @@ case "$pretraining_config" in
             --mask 0.0
         ;;
     "sm_w_rotate") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -126,7 +123,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_no_permute_w_rotate") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -139,7 +136,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_less_masking") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -152,7 +149,7 @@ case "$pretraining_config" in
             --mask 0.1 
         ;;
     "sm_less_perm") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -165,7 +162,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_no_random") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -178,7 +175,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_no_random_no_perm") 
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising" \
@@ -191,7 +188,7 @@ case "$pretraining_config" in
             --mask 0.3 
         ;;
     "sm_as_t5")
-        echo "Launching pretraining..." && pretrain_bart $seed \
+        echo "Launching pretraining..." && pretrain_bart "$seed" \
             "resources/data/books1/bin" \
             "bart_small" \
             "denoising_t5" \

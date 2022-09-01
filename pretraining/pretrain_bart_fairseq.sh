@@ -91,9 +91,10 @@ convert_to_hf() {
 # https://github.com/facebookresearch/fairseq/issues/1899#issuecomment-1069429320
 pretrain_bart() {
 
-    data_dir="$1" # "resources/data/books1/bin"
-    model_config="$2" # bart_small
-    task="$3"
+    seed="$1"
+    data_dir="$2" # "resources/data/books1/bin"
+    model_config="$3" # bart_small
+    task="$4"
 
     # parse arguments for denoising objectives
     #https://gist.github.com/jimratliff/d735a57eef05b650d4a17f10b7da64d9
@@ -102,11 +103,12 @@ pretrain_bart() {
     # get an ID string for the denoised pretraining run
     denoising_args=$(get_denoising_args_string "${replace_length} ${mask_random} ${rotate} ${permute_sentences} ${insert} ${poisson_lambda} ${mask}")
     
-    fairseq_save_dir="resources/models/pt/fairseq/${model_config}-${task}-${denoising_args}"
+    fairseq_save_dir="resources/models/seed_$seed/pt/fairseq/${model_config}-${task}-${denoising_args}"
     
     echo ""
     echo -e "model_config:\t\t$model_config"
     echo ""
+    echo -e "seed:\t\t\t$seed"
     echo -e "task:\t\t\t$task"
     echo -e "replace-length:\t\t$replace_length"
     echo -e "mask-random:\t\t$mask_random"
@@ -125,7 +127,7 @@ pretrain_bart() {
         --save-dir "$fairseq_save_dir" \
         --arch "$model_config" \
         --wandb-project "bart-pretraining" \
-        --seed 4 --fp16 \
+        --seed "$seed" --fp16 \
         --lr 0.0004 `# adjust accordingly` \
         --optimizer adam \
         --lr-scheduler polynomial_decay `# linear (not in Fairseq) may improve budgeted training` \
@@ -167,7 +169,7 @@ pretrain_bart() {
 
     echo "$fairseq_save_dir"
 
-    hf_save_dir="resources/models/pt/hf_conv/${model_config}-${task}-${denoising_args}"
+    hf_save_dir="resources/models/seed_$seed/pt/hf_conv/${model_config}-${task}-${denoising_args}"
     convert_to_hf "$fairseq_save_dir" "$data_dir/../tok/tokenizer/" "$hf_save_dir"
 
 }
