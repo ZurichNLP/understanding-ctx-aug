@@ -70,7 +70,7 @@ source start.sh
 exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5")
 
 # launches a single experiment job for each exp_id in parallel
-srun python generation_exp.py --model_dir "$model_path" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}" --batch_size $batch_size
+srun python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
 
 echo ""
 echo "Done."

@@ -105,12 +105,11 @@ if __name__ == "__main__":
         print(f'[!] Overwriting {outfile}')
 
     checkpoint = get_best_checkpoint(args.model_dir)
-    model_args = {
+    gen_args = {
         "model_name_or_path": args.model_dir,
         "checkpoint_dir": checkpoint,
+        "batch_size": args.batch_size,
         }
-    
-    gen_args = model_args
     gen_args.update(topical_chat_data_config)
     gen_args.update(baseline_config)
     for exp_id in args.exp_id.split('+'):
@@ -124,8 +123,8 @@ if __name__ == "__main__":
         gen_args['seed'] = seed
 
         # to execute seperate processes from the command line, uncomment this        
-        # arg_string = print_args(gen_args)
-        # print(f'python inference.py {arg_string}')
+        arg_string = print_args(gen_args)
+        print(f'python inference.py {arg_string}')
         # os.system(f'python inference.py {arg_string}')
         
         m = InferenceModel(gen_args)
