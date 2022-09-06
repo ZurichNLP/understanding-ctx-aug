@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=00:10:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
@@ -14,12 +14,13 @@
 #######################################################################
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+seed=42
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -p pretrained_model -o out_dir"
+    >&2 echo "$script -r repo_base -i in_dir -o out_dir"
 }
 
 # missing arguments that are required
@@ -31,11 +32,12 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:p:o:" flag; do
+while getopts "r:i:o:s:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
-    p) pretrained_model="$OPTARG" ;;
+    i) in_dir="$OPTARG" ;;
     o) out_dir="$OPTARG" ;;
+    s) seed="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -47,13 +49,18 @@ if [[ -z $repo_base ]]; then
     exit 1
 fi
 
-if [[ -z $pretrained_model ]]; then
-    print_missing_arg "[-p pretrained_model]" "pretrained model"
+if [[ -z $seed ]]; then
+    print_missing_arg "[-s seed]" "random seed for finetuning run"
+    exit 1
+fi
+
+if [[ -z $in_dir ]]; then
+    print_missing_arg "[-i in_dir]" "pretrained model dir for finetuning"
     exit 1
 fi
 
 if [[ -z $out_dir ]]; then
-    print_missing_arg "[-o out_dir]" "out_dir"
+    print_missing_arg "[-o out_dir]" "save dir for finetuned model"
     exit 1
 fi
 
@@ -73,26 +80,4 @@ source start.sh
 # import functions
 source finetune.sh
 
-echo "Launching finetuning..." && finetune_for_kgd "$pretrained_model" "$out_dir"
-
-# case "$model_type" in
-#     "roberta") 
-#         echo "Launching finetuning..." && finetune_for_kgd "roberta-base" "resources/models/ft/roberta_base";;
-#     "bart")
-#         echo "Launching finetuning..." && finetune_for_kgd "facebook/bart-base" "resources/models/ft/bart_base";;
-#     "t5") 
-#          echo "Launching finetuning..." && finetune_for_kgd "t5-small" "resources/models/ft/t5_small";;
-#     "dummy_bart") 
-#         echo "Launching finetuning..." && dummy_finetune "facebook/bart-base" "resources/models/ft/dummy";;
-#     "dummy_t5") 
-#         echo "Launching finetuning..." && dummy_finetune "t5-small" "resources/models/ft/dummy";;
-#     "dummy_roberta") 
-#         echo "Launching finetuning..." && dummy_finetune "roberta-base" "resources/models/ft/dummy";;
-#     *) 
-#         echo "Model type not recognised: $model_type" && exit 1 
-#         ;;
-# esac
-
-echo ""
-echo "done."
-echo ""
+echo "Launching finetuning..." && finetune_for_kgd "$in_dir" "$out_dir" "$seed"

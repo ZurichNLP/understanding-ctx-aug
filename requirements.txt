@@ -8,7 +8,7 @@ datasets==2.4.0
 evaluate==0.2.2
 fastBPE==0.1.0
 filelock==3.7.1
--e git+ssh://git@github.com/tannonk/fairseq.git@d23971bbf3312cbd6191dd49990b226f5b0121d6#egg=fairseq
+# -e git+ssh://git@github.com/tannonk/fairseq.git@d23971bbf3312cbd6191dd49990b226f5b0121d6#egg=fairseq
 gpustat==0.6.0
 huggingface-hub==0.8.1
 idna==3.3
@@ -44,7 +44,7 @@ torch==1.12.0
 torchaudio==0.12.0
 torchvision==0.13.0
 tqdm==4.64.0
--e git+ssh://git@github.com/tannonk/transformers.git@b8ac4ea54357e6b0090046f2558ac91092a86855#egg=transformers
+# -e git+ssh://git@github.com/tannonk/transformers.git@b8ac4ea54357e6b0090046f2558ac91092a86855#egg=transformers
 typing_extensions==4.3.0
 update-checker==0.18.0
 urllib3==1.26.11

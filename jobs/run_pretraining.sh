@@ -13,14 +13,80 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
-seed=4
+BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+SEED=4
+
+# argument parser
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --base)
+            BASE="$2"
+            shift 2
+            ;;
+        --data_dir)
+            DATA_DIR="$2" # "resources/data/books1/bin"
+            shift 2
+            ;;
+        --save_dir)
+            SAVE_DIR="$2"
+            shift 2
+            ;;
+        --model_config)
+            MODEL_CONFIG="$2"
+            shift 2
+            ;;
+        --task)
+            TASK="$2"
+            shift 2
+            ;;
+        --seed)
+            SEED="$2"
+            shift 2
+            ;;
+        --replace_length)
+            REPLACE_LENGTH="$2"
+            shift 2 # past argument
+            ;;
+        --mask_random)
+            MASK_RANDOM="$2"
+            shift 2 # past argument
+            ;;
+        --rotate)
+            ROTATE="$2"
+            shift 2
+            ;;
+        --permute_sentences)
+            PERMUTE_SENTENCES="$2"
+            shift 2 # past argument
+            ;;
+        --insert)
+            INSERT="$2"
+            shift 2 # past argument
+            ;;
+        --poisson_lambda)
+            POISSON_LAMBDA="$2"
+            shift 2 # past argument
+            ;;
+        --mask)
+            MASK="$2"
+            shift 2 # past argument
+            ;; 
+        -*|--*)
+            echo "Unknown option $1" && exit 1
+            ;;
+        *)
+            POSITIONAL_ARGS+=("$1") # save positional arg
+            shift # past argument
+            ;;
+    esac
+done
+
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -p pretraining config  [-s seed] [-r repo_base]"
+    >&2 echo "see list of args in $script"
 }
 
 # missing arguments that are required
@@ -31,30 +97,62 @@ print_missing_arg() {
     >&2 echo "Please provide: $message"
 }
 
-# argument parser
-while getopts "r:p:s:" flag; do
-  case "${flag}" in
-    r) repo_base="$OPTARG" ;;
-    p) pretraining_config="$OPTARG" ;;
-    s) seed="$OPTARG" ;;
-    *) print_usage
-       exit 1 ;;
-  esac
-done
-
 # checking required arguments
-if [[ -z $repo_base ]]; then
-    print_missing_arg "[-r repo_base]" "Base directory of the repository"
-    exit 1
+if [[ -z $BASE ]]; then
+    print_missing_arg "[-r BASE]" "Base directory of the repository" && print_usage && exit 1
 fi
 
-if [[ -z $pretraining_config ]]; then
-    print_missing_arg "[-p pretraining_config]" "pretraining config"
-    exit 1
+if [[ -z $DATA_DIR ]]; then
+    print_missing_arg "[--data_dir]" "path to data directory" && print_usage && exit 1
+fi
+
+if [[ -z $SAVE_DIR ]]; then
+    print_missing_arg "[--save_dir]" "path to save directory" && print_usage && exit 1
+fi
+
+if [[ -z $MODEL_CONFIG ]]; then
+    print_missing_arg "[--model_config]" "model config (e.g. bart_small)" && print_usage && exit 1
+fi
+
+if [[ -z $TASK ]]; then
+    print_missing_arg "[--task]" "fairseq task (e.g. denoising)" && print_usage && exit 1
+fi
+
+if [[ -z $SEED ]]; then
+    print_missing_arg "[--seed]" "random seed" && print_usage && exit 1
+fi
+
+# BART specific args
+if [[ -z $REPLACE_LENGTH ]]; then
+    print_missing_arg "[--replace_length]" "replace length for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $MASK_RANDOM ]]; then
+    print_missing_arg "[--mask_random]" "mask random for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $ROTATE ]]; then
+    print_missing_arg "[--rotate]" "rotate for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $PERMUTE_SENTENCES ]]; then
+    print_missing_arg "[--permute_sentences]" "permute sentences for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $INSERT ]]; then
+    print_missing_arg "[--insert]" "insert for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $POISSON_LAMBDA ]]; then
+    print_missing_arg "[--poisson_lambda]" "poisson lambda for BART pretraining" && print_usage && exit 1
+fi
+
+if [[ -z $MASK ]]; then
+    print_missing_arg "[--mask]" "mask for BART pretraining" && print_usage && exit 1
 fi
 
 # cd to base dir
-cd "$repo_base" && echo $(pwd) || exit 1
+cd "$BASE" && echo $(pwd) || exit 1
 
 #######################################################################
 # ACTIVATE ENV
@@ -66,146 +164,18 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-source pretraining/pretrain_bart_fairseq.sh
+# source pretraining/pretrain_bart_fairseq.sh
 
-case "$pretraining_config" in
-   
-    "sm_baseline") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.1 \
-            --permute-sentences 1.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_no_permute") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.1 \
-            --permute-sentences 0.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3
-        ;;
-    "sm_no_masking") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.0 \
-            --permute-sentences 1.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.0
-        ;;
-    "sm_w_rotate") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 1.0 \
-            --mask-random 0.1 \
-            --permute-sentences 1.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_no_permute_w_rotate") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 1.0 \
-            --mask-random 0.1 \
-            --permute-sentences 0.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_less_masking") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.1 \
-            --permute-sentences 1.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.1 
-        ;;
-    "sm_less_perm") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.1 \
-            --permute-sentences 0.1 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_no_random") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.0 \
-            --permute-sentences 1.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_no_random_no_perm") 
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.0 \
-            --permute-sentences 0.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-    "sm_as_t5")
-        echo "Launching pretraining..." && pretrain_bart "$seed" \
-            "resources/data/books1/bin" \
-            "bart_small" \
-            "denoising_t5" \
-            --replace-length 1 \
-            --rotate 0.0 \
-            --mask-random 0.0 \
-            --permute-sentences 0.0 \
-            --insert 0.0 \
-            --poisson-lambda 3.0 \
-            --mask 0.3 
-        ;;
-
-    *) 
-        echo "Pretraining setting not recognised: $pretraining_config" && exit 1 
-        ;;
-esac
-
-echo ""
-echo "Done."
-echo ""
+bash pretraining/pretrain_bart_fairseq.sh \
+    --seed "$SEED" \
+    --data_dir "$DATA_DIR" \
+    --save_dir "$SAVE_DIR" \
+    --model_config "$MODEL_CONFIG" \
+    --task "$TASK" \
+    --replace-length "$REPLACE_LENGTH" \
+    --mask-random "$MASK_RANDOM" \
+    --rotate "$ROTATE" \
+    --permute-sentences "$PERMUTE_SENTENCES" \
+    --insert "$INSERT" \
+    --poisson-lambda "$POISSON_LAMBDA" \
+    --mask "$MASK"
