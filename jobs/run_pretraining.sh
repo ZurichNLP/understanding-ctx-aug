@@ -164,18 +164,16 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-# source pretraining/pretrain_bart_fairseq.sh
-
 bash pretraining/pretrain_bart_fairseq.sh \
-    --seed "$SEED" \
     --data_dir "$DATA_DIR" \
     --save_dir "$SAVE_DIR" \
     --model_config "$MODEL_CONFIG" \
     --task "$TASK" \
-    --replace-length "$REPLACE_LENGTH" \
-    --mask-random "$MASK_RANDOM" \
+    --seed "$SEED" \
+    --replace_length "$REPLACE_LENGTH" \
+    --mask_random "$MASK_RANDOM" \
     --rotate "$ROTATE" \
-    --permute-sentences "$PERMUTE_SENTENCES" \
+    --permute_sentences "$PERMUTE_SENTENCES" \
     --insert "$INSERT" \
-    --poisson-lambda "$POISSON_LAMBDA" \
+    --poisson_lambda "$POISSON_LAMBDA" \
     --mask "$MASK"

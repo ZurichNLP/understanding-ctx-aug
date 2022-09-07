@@ -71,6 +71,10 @@ python prepare_topical_chat_dataset.py --data_dir data/Topical-Chat --split test
 
 ## Experiments 
 
+### Pre-training small BART models
+
+See README in `pretraining`.
+
 ### Fine-tuning base models
 
 The python script `finetune.py` is adapted from Hugging Face's `run_summarization.py` example script and can be used to fine-tune a new model for our experiments.
@@ -161,9 +165,31 @@ python generation_exp.py -m resources/models/ft/t5-small --exp_id qu_ctxt_aug
 python test_run.py /scratch/tkew/ctrl_tokens/resources/models/muss_en_mined_hf
 
 ``` -->
+### Pipeline
+
+To run a new experiment involving pre-training, fine-tuning and generation with evaluation, use `jobs/run.sh`, specifying the random seed and the yml config with BART's denoising args, e.g.:
+
+```
+bash jobs/run.sh -s 85 -c exp_configs/bart_small_span_infill.yml
+```
+
+<!-- The simplest way to run all experiment scripts is to launch the pipeline jobs with SLURM dependencies.
+Following the example here https://www.hpc.caltech.edu/documentation/faq/dependencies-and-pipelines, submit the jobs as follows:
+
+Since the output directory (e.g., `bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03`) of the pretrained model is created dynamically, we need to know it before submitting the fine-tuning and generation jobs. 
+
+
+```
+jid1=$(sbatch pretraining/jobs/run_pretraining.sh -p sm_baseline -s 193847 | sed 's/Submitted batch job //')
+jid2=$(sbatch --dependency=afterok:$jid1 jobs/run_finetuning.sh -p resources/models/seed_193847/pt/hf_conv/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 -o resources/models/seed_193847/ft/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 | sed 's/Submitted batch job //')
+jid3=$(sbatch --dependency=afterok:$jid2 jobs/run_generation_exp_parallel.sh -m resources/models/seed_193847/ft/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 -o results/seed_193847 | sed 's/Submitted batch job //')
+``` -->
+
+
 
 ## TODO
 
+- [x] pipelining
 - [x] evaluation
     -  [x] bleu
     -  [x] rouge

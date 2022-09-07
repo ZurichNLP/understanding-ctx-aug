@@ -52,13 +52,13 @@ cd "$BASE" && echo $(pwd) || exit 1
 # ACTIVATE ENV
 #######################################################################
 
-source $BASE/start.sh
+source "$BASE/start.sh"
 
 #######################################################################
 # IMPORT HELPERS
 #######################################################################
 
-source $BASE/jobs/job_utils.sh
+source "$BASE/jobs/job_utils.sh"
 
 #######################################################################
 # GET EXPERIMENT SETTINGS 
@@ -71,7 +71,7 @@ eval "$(parse_yaml "$CONFIG_YML")"
 #######################################################################
 
 SLURM_ARGS_GENERIC="--cpus-per-task=1 --time=00:10:00 --mem=4G --partition=generic"
-SLURM_ARGS_VOLTA="--qos=vesta --time=10:00:00 --gres gpu:1 --cpus-per-task 1 --mem-per-cpu=8G"
+SLURM_ARGS_VOLTA="--qos=vesta --time=10:00:00 --gres gpu:1 --cpus-per-task 1 --mem-per-cpu=8G --partition=volta"
 # SLURM_ARGS_DUMMY="--qos=vesta --time=0:10:00 --gres gpu:1 --cpus-per-task 1 --mem 8g"
 
 
@@ -102,17 +102,17 @@ if [[ ! -d "$PRETRAIN_SAVE_DIR" ]]; then
     mkdir -p "$PRETRAIN_SAVE_DIR"
     mkdir -p "$CONVERT_SAVE_DIR"
     mkdir -p "$FINETUNE_SAVE_DIR"
+    mkdir -p "$LOG_DIR"
 elif [[ "$FORCE" == 1 ]]; then
     echo "Overwriting existing directory $PRETRAIN_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
     rm -rf "$PRETRAIN_SAVE_DIR" && mkdir -p "$PRETRAIN_SAVE_DIR"
     rm -rf "$CONVERT_SAVE_DIR" && mkdir -p "$CONVERT_SAVE_DIR"
     rm -rf "$FINETUNE_SAVE_DIR" && mkdir -p "$FINETUNE_SAVE_DIR"
+    # rm -rf "$LOG_DIR" && mkdir -p "$LOG_DIR" # don't delete old logs
 else
     echo "PRETRAIN_SAVE_DIR already exists: $PRETRAIN_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
     exit 1
 fi
-
-mkdir -p "$LOG_DIR"
 
 #######################################################################
 # LAUNCH EXPERIMENT
@@ -153,7 +153,7 @@ id_pretrain=$(
     --mask "$MASK"
     )
 
-echo "  id_pretrain: $id_pretrain | $LOG_DIR/slurm-$id_pretrain.out" | tee -a $LOG_DIR/MAIN
+echo "  id_pretrain: $id_pretrain | $LOG_DIR/slurm-$id_pretrain.out" | tee -a "$LOG_DIR/MAIN"
 
 # run fs -> hf conversion
 id_convert=$(
