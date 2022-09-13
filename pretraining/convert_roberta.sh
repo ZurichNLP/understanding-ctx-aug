@@ -6,7 +6,7 @@ data_dir=$2 # resources/data/books1/bin
 tokenizer_dir=$3 # data_dir/../tok/tokenizer/
 output_dir=$4 # resources/models/seed_42/pt/hf_conv/roberta_small-MLM
 
-{ [ -z "$checkpoint_dir" ] || [ -z "$tokenizer" ] || [ -z "$output_dir" ]; } && echo "Usage: convert_roberta.sh checkpoint_dir tokenizer output_dir" && exit 1
+{ [ -z "$checkpoint_dir" ] || [ -z "$data_dir" ] || [ -z "$tokenizer_dir" ] || [ -z "$output_dir" ]; } && echo "Usage: convert_roberta.sh checkpoint_dir data_dir tokenizer_dir output_dir" && exit 1
 
 # rename checkpoint for conversion script (expects `model.pt`)
 mv "$checkpoint_dir/checkpoint_last.pt" "$checkpoint_dir/model.pt"

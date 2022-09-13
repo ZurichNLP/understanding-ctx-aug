@@ -577,6 +577,7 @@ def main():
     #     model.decoder.resize_token_embeddings(len(tokenizer))
         logger.info(f"Loading {encoder_name}-{decoder_name} as encoder-decoder")
         model = EncoderDecoderModel.from_encoder_decoder_pretrained(encoder_name, decoder_name, tie_encoder_decoder=model_args.tie_encoder_decoder)
+        logger.info(f"Loaded {encoder_name}-{decoder_name} as encoder-decoder. Tied encoder-decoder: {model_args.tie_encoder_decoder}")
         tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
         model.config.decoder_start_token_id = tokenizer.cls_token_id
         model.config.pad_token_id = tokenizer.pad_token_id
@@ -621,7 +622,7 @@ def main():
         )
 
         model.resize_token_embeddings(len(tokenizer))
-        
+    
     if model.config.decoder_start_token_id is None and isinstance(tokenizer, (MBartTokenizer, MBartTokenizerFast)):
         if isinstance(tokenizer, MBartTokenizer):
             model.config.decoder_start_token_id = tokenizer.lang_code_to_id[data_args.lang]
@@ -650,6 +651,11 @@ def main():
                 f" `--max_source_length` to {model.config.max_position_embeddings} or to automatically resize the"
                 " model's position encodings by passing `--resize_position_embeddings`."
             )
+
+
+    logger.info(f'Total model parameters: {model.num_parameters()}')
+    logger.info(f'Total trainable model parameters: {model.num_parameters(only_trainable=True)}')
+    logger.info(f'Total trainable model parameters excluding embeddings: {model.num_parameters(only_trainable=True, exclude_embeddings=True)}')
 
     prefix = data_args.source_prefix if data_args.source_prefix is not None else ""
 
