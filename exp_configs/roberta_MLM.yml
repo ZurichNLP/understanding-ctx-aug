@@ -1,0 +1,5 @@
+DATA_DIR: "resources/data/books1/bin"
+SAVE_DIR_PREFIX: "resources/models"
+MODEL_CONFIG: "roberta_small"
+TASK: "masked_lm"
+MODEL_ID: roberta-MLM

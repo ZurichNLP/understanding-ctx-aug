@@ -5,10 +5,10 @@
 Adapted from https://github.com/kb-labb/kb_bart/blob/main/save_to_huggingface.py
 
 Example usage:
-    python convert_fairseq_model_to_transformers.py \
+    python convert_fairseq_bart_model_to_transformers.py \
         --checkpoint resources/models/pt/fairseq/bart_small/checkpoint_best.pt \
         --tokenizer resources/data/books1/tok/tokenizer \
-        --out_dir resources/models/pt/huggingface_conv/bart_small
+        --output_dir resources/models/pt/huggingface_conv/bart_small
 """
 
 import argparse
@@ -22,7 +22,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=str, required=True, default=None)
     parser.add_argument("--tokenizer", type=str, required=True, default=None)
-    parser.add_argument("--out_dir", type=str, required=True, default=None)
+    parser.add_argument("--output_dir", type=str, required=True, default=None)
     parser.add_argument("--base_config", type=str, required=False, default="facebook/bart-base")
     return parser.parse_args()
 
@@ -66,7 +66,7 @@ def get_model_layer_counts(modules, verbose=False):
 def main():
     args = get_args()
     
-    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
@@ -117,11 +117,11 @@ def main():
     model.lm_head = make_linear_from_emb(model.model.shared)
 
     # Save to Huggingface format
-    config.save_pretrained(args.out_dir)
-    tokenizer.save_pretrained(args.out_dir)
-    model.save_pretrained(args.out_dir)
+    config.save_pretrained(args.output_dir)
+    tokenizer.save_pretrained(args.output_dir)
+    model.save_pretrained(args.output_dir)
 
-    print(f"Saved converted model to {args.out_dir}")
+    print(f"Saved converted model to {args.output_dir}")
 
 if __name__ == "__main__":
     main()

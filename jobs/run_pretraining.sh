@@ -14,7 +14,7 @@
 #######################################################################
 
 BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
-SEED=4
+# SEED=4
 
 # argument parser
 while [[ $# -gt 0 ]]; do
@@ -71,6 +71,10 @@ while [[ $# -gt 0 ]]; do
             MASK="$2"
             shift 2 # past argument
             ;; 
+        --denoising_method)
+            DENOISING_METHOD="$2"
+            shift 2 # past argument
+            ;;
         -*|--*)
             echo "Unknown option $1" && exit 1
             ;;
@@ -85,7 +89,7 @@ done
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
-    >&2 echo "Usage: "
+    >&2 echo "Usage: bash run_pretraining.sh [ARGS]"
     >&2 echo "see list of args in $script"
 }
 
@@ -93,7 +97,7 @@ print_usage() {
 print_missing_arg() {
     missing_arg=$1
     message=$2
-    >&2 echo "Missing: $missing_arg"
+    >&2 echo "$(basename "$0") Missing: $missing_arg"
     >&2 echo "Please provide: $message"
 }
 
@@ -151,6 +155,10 @@ if [[ -z $MASK ]]; then
     print_missing_arg "[--mask]" "mask for BART pretraining" && print_usage && exit 1
 fi
 
+if [[ -z $DENOISING_METHOD ]]; then
+    echo "No denoising method specified. The default BART implementation will be used."
+fi
+
 # cd to base dir
 cd "$BASE" && echo $(pwd) || exit 1
 
@@ -176,4 +184,5 @@ bash pretraining/pretrain_bart_fairseq.sh \
     --permute_sentences "$PERMUTE_SENTENCES" \
     --insert "$INSERT" \
     --poisson_lambda "$POISSON_LAMBDA" \
-    --mask "$MASK"
+    --mask "$MASK" \
+    --denoising_method "$DENOISING_METHOD"

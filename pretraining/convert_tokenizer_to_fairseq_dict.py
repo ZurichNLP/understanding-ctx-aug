@@ -29,10 +29,10 @@ import argparse
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--vocab", required=False, type=str, help="Tokenizer's vocab.json file")
-ap.add_argument("-o", "--out_dir", required=False, type=str, help="Output directory")
+ap.add_argument("-o", "--output_dir", required=False, type=str, help="Output directory")
 args = ap.parse_args()
 
-outfile = Path(args.out_dir) / "dict.txt"
+outfile = Path(args.output_dir) / "dict.txt"
 
 with open(args.vocab, 'r') as f:
     vocab = json.load(f)

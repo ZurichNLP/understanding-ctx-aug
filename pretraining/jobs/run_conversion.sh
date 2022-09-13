@@ -10,7 +10,7 @@
 
 # --checkpoint resources/models/pt/fairseq/bart_small/checkpoint_best.pt \
 # --tokenizer resources/data/books1/tok/tokenizer \
-# --out_dir resources/models/pt/huggingface_conv/bart_small
+# --output_dir resources/models/pt/huggingface_conv/bart_small
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
@@ -22,7 +22,7 @@ repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -c checkpoint -o out_dir -t tokenizer"
+    >&2 echo "$script -r repo_base -c checkpoint -o output_dir -t tokenizer"
 }
 
 # missing arguments that are required
@@ -38,7 +38,7 @@ while getopts "r:c:t:o:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     c) checkpoint_dir="$OPTARG" ;;
-    o) out_dir="$OPTARG" ;;
+    o) output_dir="$OPTARG" ;;
     t) tokenizer="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
@@ -56,8 +56,8 @@ if [[ -z $checkpoint_dir ]]; then
     exit 1
 fi
 
-if [[ -z $out_dir ]]; then
-    print_missing_arg "[-o out_dir]" "path to save converted modelfor Hugging Face "
+if [[ -z $output_dir ]]; then
+    print_missing_arg "[-o output_dir]" "path to save converted modelfor Hugging Face "
     exit 1
 fi
 
@@ -79,7 +79,7 @@ source start.sh
 # LAUNCH
 #######################################################################
 
-python convert_fairseq_model_to_transformers.py \
+python convert_fairseq_bart_model_to_transformers.py \
     --checkpoint "$checkpoint_dir/checkpoint_best.pt" \
     --tokenizer "$tokenizer" \
-    --out_dir "$out_dir"
+    --output_dir "$output_dir"

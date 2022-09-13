@@ -21,13 +21,13 @@
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 batch_size=120
-out_dir="results"
+output_dir="results"
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -m model_path [-e exp_id] [-o out_dir]"
+    >&2 echo "$script -r repo_base -m model_path [-e exp_id] [-o output_dir]"
 }
 
 # missing arguments that are required
@@ -45,7 +45,7 @@ while getopts "r:m:e:b:o:" flag; do
     m) model_path="$OPTARG" ;;
     e) exp_id="$OPTARG" ;;
     b) batch_size="$OPTARG" ;;
-    o) out_dir="$OPTARG" ;;
+    o) output_dir="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -80,12 +80,12 @@ if [[ -z $exp_id ]]; then
     for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5"; do
         echo "Running experiment $exp_id"
         echo "Batch size: $batch_size"
-        python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --out_dir "$out_dir" --exp_id "$exp_id"
+        python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
     done
 else
     echo "Running experiment $exp_id"
     echo "Batch size: $batch_size"
-    python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --out_dir "$out_dir" --exp_id "$exp_id"
+    python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
 fi
 
 echo ""

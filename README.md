@@ -165,19 +165,34 @@ python generation_exp.py -m resources/models/ft/t5-small --exp_id qu_ctxt_aug
 python test_run.py /scratch/tkew/ctrl_tokens/resources/models/muss_en_mined_hf
 
 ``` -->
-### Pipeline
+### Pipelines
 
-To run a new experiment involving pre-training, fine-tuning and generation with evaluation, use `jobs/run.sh`, specifying the random seed and the yml config with BART's denoising args, e.g.:
+To fine-tune, generate and evaluate a publicly available pre-trained model on slurm, run, e.g.:
 
 ```
-bash jobs/run.sh -s 85 -c exp_configs/bart_small_span_infill.yml
+roberta_base_ft_jid=$(sbatch jobs/run_finetuning.sh -i "roberta-base" -o resources/models/seed_1984/ft/roberta_base -s 1984 | sed 's/Submitted batch job //')
+roberta_base_gen_jid=$(sbatch --dependency=afterany:$roberta_base_ft_jid jobs/run_generation_exp.sh -m resources/models/seed_1984/ft/roberta_base | sed 's/Submitted batch job //')
+
+bert_base_ft_jid=$(sbatch jobs/run_finetuning.sh -i "bert-base-cased" -o resources/models/seed_1984/ft/bert_base -s 1984 | sed 's/Submitted batch job //')
+bert_base_gen_jid=$(sbatch --dependency=afterany:$bert_base_ft_jid jobs/run_generation_exp.sh -m resources/models/seed_1984/ft/bert_base | sed 's/Submitted batch job //')
+
+bart_base_ft_jid=$(sbatch jobs/run_finetuning.sh -i "facebook/bart-base" -o resources/models/seed_1984/ft/bart_base -s 1984 | sed 's/Submitted batch job //')
+bart_base_gen_jid=$(sbatch --dependency=afterany:$bart_base_ft_jid jobs/run_generation_exp.sh -m resources/models/seed_1984/ft/bart_base | sed 's/Submitted batch job //')
+
+t5_small_ft_jid=$(sbatch jobs/run_finetuning.sh -i "t5-small" -o resources/models/seed_1984/ft/t5_small -s 1984 | sed 's/Submitted batch job //')
+t5_small_gen_jid=$(sbatch --dependency=afterany:$t5_small_ft_jid jobs/run_generation_exp.sh  -m resources/models/seed_1984/ft/t5_small | sed 's/Submitted batch job //')
+```
+
+To run a new experiment with small (mini) models involving pre-training, fine-tuning and generation with evaluation, use `jobs/run.sh`, specifying the random seed and the yml config with BART's denoising args, e.g.:
+
+```
+bash jobs/run.sh -s 85 -c exp_configs/SI_bart.yml
 ```
 
 <!-- The simplest way to run all experiment scripts is to launch the pipeline jobs with SLURM dependencies.
 Following the example here https://www.hpc.caltech.edu/documentation/faq/dependencies-and-pipelines, submit the jobs as follows:
 
 Since the output directory (e.g., `bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03`) of the pretrained model is created dynamically, we need to know it before submitting the fine-tuning and generation jobs. 
-
 
 ```
 jid1=$(sbatch pretraining/jobs/run_pretraining.sh -p sm_baseline -s 193847 | sed 's/Submitted batch job //')

@@ -25,39 +25,36 @@ parse_denoising_args() {
         case $1 in
             --replace-length) # fairseq uses '-' instead of '_' in the argument name
                 REPLACE_LENGTH="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --mask-random) # fairseq uses '-' instead of '_' in the argument name
                 MASK_RANDOM="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --rotate)
                 ROTATE="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --permute-sentences) # fairseq uses '-' instead of '_' in the argument name
                 PERMUTE_SENTENCES="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --insert)
                 INSERT="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --poisson-lambda) # fairseq uses '-' instead of '_' in the argument name
                 POISSON_LAMBDA="$2"
-                shift # past argument
-                shift # past value
+                shift 2
                 ;;
             --mask)
                 MASK="$2"
-                shift # past argument
-                shift # past value
-                ;; 
+                shift 2
+                ;;
+            --denoising-method)
+                DENOISING_METHOD="$2"
+                shift 2
+                ;;
             -*|--*)
                 echo "Unknown option $1"
                 exit 1
@@ -69,7 +66,10 @@ parse_denoising_args() {
         esac
     done
 
-    echo "--replace-length=$REPLACE_LENGTH --mask-random=$MASK_RANDOM --rotate=$ROTATE --permute-sentences=$PERMUTE_SENTENCES --insert=$INSERT --poisson-lambda=$POISSON_LAMBDA --mask=$MASK"
+    echo "--replace-length=$REPLACE_LENGTH --mask-random=$MASK_RANDOM \
+        --rotate=$ROTATE --permute-sentences=$PERMUTE_SENTENCES \
+        --insert=$INSERT --poisson-lambda=$POISSON_LAMBDA \
+        --mask=$MASK"
 
 }
 
@@ -77,13 +77,16 @@ parse_denoising_args_to_string() {
     d_args=$1
     # returns a unique ID string for the denoised pretraining run (used as save_dir)
     d_args=${d_args/--replace-length=/rl}
+    d_args=${d_args/-1/01} # for mass decoding which requires -1
     d_args=${d_args/--mask-random=/_mr}
     d_args=${d_args/--rotate=/_rt}
     d_args=${d_args/--permute-sentences=/_ps}
     d_args=${d_args/--insert=/_in}
     d_args=${d_args/--poisson-lambda=/_pl}
     d_args=${d_args/--mask=/_ma}
-    d_args=$(echo "${d_args}" | sed "s/\.0//g" | sed "s/ //g" | sed "s/\.//g")
+    # d_args=${d_args/--denoising-method=/_}
+    # d_args=$(echo "${d_args}" | sed "s/\.0//g" | sed "s/ //g" | sed "s/\.//g")
+    d_args=$(echo "${d_args}" | sed "s/ //g" )
     
     echo "$d_args"
 }

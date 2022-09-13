@@ -120,6 +120,16 @@ class ModelArguments:
         },
     )
 
+    is_encoder_decoder: bool = field(
+        default=False,
+        metadata={"help": "Set this flag if you are training an encoder-decoder model."},
+    )
+
+    tie_encoder_decoder: Optional[bool] = field(
+        default=False,
+        metadata={"help": "to create a shared encoder-decoder model, set this to True"}
+    )
+
 
 @dataclass
 class DataTrainingArguments:
@@ -434,8 +444,7 @@ def main():
         import wandb
         wandb.init(
             project=data_args.project_name, 
-            tags=[f'train_samples_{data_args.max_train_samples}', data_args.train_file, data_args.validation_file, data_args.test_file],
-            group=model_args.model_name_or_path
+            tags=[f'train_samples_{data_args.max_train_samples}', data_args.train_file, data_args.validation_file, data_args.test_file, model_args.model_name_or_path],
             )
 
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
@@ -473,6 +482,17 @@ def main():
             "You're running a t5 model but didn't provide a source prefix, which is the expected, e.g. with "
             "`--source_prefix 'summarize: ' `"
         )
+
+    if training_args.fp16 and model_args.model_name_or_path in [
+        "t5-small",
+        "t5-base",
+        "t5-large",
+        "t5-3b",
+        "t5-11b",
+    ]:
+        # update training_args.fp16 with T5 models, since this seems unstable
+        training_args.fp16 = False
+        logger.warning(f"fp16 is unstable with T5 models, so we're turning it off! training_args.fp16 = {training_args.fp16}")
 
     # Detecting last checkpoint.
     last_checkpoint = None
@@ -534,8 +554,13 @@ def main():
     # Distributed training:
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
-    
-    
+
+    if model_args.is_encoder_decoder:
+        if '+' in model_args.model_name_or_path:
+            encoder_name, decoder_name = model_args.model_name_or_path.split('+')
+        else:
+            encoder_name = decoder_name = model_args.model_name_or_path
+
     # if model_args.model_name_or_path in ['bert-base-cased+gpt2']:
     #     model = EncoderDecoderModel.from_encoder_decoder_pretrained("bert-base-cased", "gpt2", tie_encoder_decoder=True)
     #     model_args.model_name_or_path = "bert-base-cased"
@@ -550,9 +575,8 @@ def main():
         
     #     model.encoder.resize_token_embeddings(len(tokenizer))
     #     model.decoder.resize_token_embeddings(len(tokenizer))
-
-    if model_args.model_name_or_path in ['bert-base-cased', 'roberta-base']:
-        model = EncoderDecoderModel.from_encoder_decoder_pretrained(model_args.model_name_or_path, model_args.model_name_or_path, tie_encoder_decoder=True)
+        logger.info(f"Loading {encoder_name}-{decoder_name} as encoder-decoder")
+        model = EncoderDecoderModel.from_encoder_decoder_pretrained(encoder_name, decoder_name, tie_encoder_decoder=model_args.tie_encoder_decoder)
         tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
         model.config.decoder_start_token_id = tokenizer.cls_token_id
         model.config.pad_token_id = tokenizer.pad_token_id
@@ -597,7 +621,7 @@ def main():
         )
 
         model.resize_token_embeddings(len(tokenizer))
-
+        
     if model.config.decoder_start_token_id is None and isinstance(tokenizer, (MBartTokenizer, MBartTokenizerFast)):
         if isinstance(tokenizer, MBartTokenizer):
             model.config.decoder_start_token_id = tokenizer.lang_code_to_id[data_args.lang]

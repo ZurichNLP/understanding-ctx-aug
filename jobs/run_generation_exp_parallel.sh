@@ -16,13 +16,13 @@
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 batch_size=120
-out_dir="results"
+output_dir="results"
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script [-r repo_base] -m model_path [-b batch_size] [-o out_dir]"
+    >&2 echo "$script [-r repo_base] -m model_path [-b batch_size] [-o output_dir]"
 }
 
 # missing arguments that are required
@@ -39,7 +39,7 @@ while getopts "r:m:b:o:" flag; do
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
     b) batch_size="$OPTARG" ;;
-    o) out_dir="$OPTARG" ;;
+    o) output_dir="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -72,7 +72,7 @@ source start.sh
 exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5")
 
 # launches a single experiment job for each exp_id in parallel
-srun python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --out_dir "$out_dir" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
+srun python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
 
 echo ""
 echo "Done."

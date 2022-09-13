@@ -39,7 +39,7 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--filename", type=str)
     ap.add_argument("-i", "--in_dir", required=True, type=str, help="Path to directory containing files for tokenizing")
-    ap.add_argument("-o", "--out_dir", required=False, type=str, help="Path to the output")
+    ap.add_argument("-o", "--output_dir", required=False, type=str, help="Path to the output")
     ap.add_argument("--path_to_tokenizer", required=False, type=str, help="Path to tokenizer to apply")
     ap.add_argument("--as_tokens", action="store_true", help="Output human-readable tokens")
     ap.add_argument("--batch_size", required=False, default=1000, type=int, help="")
@@ -79,9 +79,9 @@ def main(args):
     tokenizer.model_max_length = tokenizer.model_max_length * 20 # set as large number to avoid warning
 
     infile = str(Path(args.in_dir) / args.filename)
-    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
-    inds_outf = str(Path(args.out_dir) / Path(args.filename).with_suffix('.ind'))
-    toks_outf = str(Path(args.out_dir) / Path(args.filename).with_suffix('.tok'))
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    inds_outf = str(Path(args.output_dir) / Path(args.filename).with_suffix('.ind'))
+    toks_outf = str(Path(args.output_dir) / Path(args.filename).with_suffix('.tok'))
 
     t0 = time.time()
     line_c = 0

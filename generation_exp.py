@@ -14,7 +14,7 @@ def set_args():
 
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--model_dir", type=str, required=True, help="path to the finetuned model folder")
-    ap.add_argument("-o", "--out_dir", type=str, default='results', required=False, help="path to the output directory")
+    ap.add_argument("-o", "--output_dir", type=str, default='results', required=False, help="path to the output directory for result csvs")
     ap.add_argument("-d", "--debug", action="store_true", help="")
     ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
     ap.add_argument("-b", "--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
@@ -51,7 +51,6 @@ topical_chat_data_config = {
 }
 
 baseline_config = {
-    # "batch_size": 120,
     "max_length": 40,
     "do_sample": True,
     "top_p": 0.9,
@@ -99,8 +98,9 @@ def print_args(args: Dict):
 if __name__ == "__main__":
     args = set_args()
     
-    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
-    outfile = Path(args.out_dir) / f'{Path(args.model_dir).stem}-{args.exp_id}.csv'
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{args.exp_id}.csv'
+    print(f'Writing generation run results to {outfile}')
     if outfile.exists() and not args.debug:
         print(f'[!] Overwriting {outfile}')
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
         # to execute seperate processes from the command line, uncomment this        
         arg_string = print_args(gen_args)
-        print(f'python inference.py {arg_string}')
+        print(f'Running inference.py with the following args:\n\t{arg_string}')
         # os.system(f'python inference.py {arg_string}')
         
         m = InferenceModel(gen_args)
@@ -149,7 +149,8 @@ if __name__ == "__main__":
         else:
             for i, o in enumerate(outputs):
                 print(f'{i}: {o}')
-
+    
+    print(f'Finished generation runs. Results saved to {outfile}')
         
 
 
