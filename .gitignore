@@ -135,6 +135,7 @@ models
 src/
 wandb/
 job_logs/
+logs/
 environment.yml
 src_bkp/
 results/

@@ -27,9 +27,10 @@ except ImportError:
 
 def set_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument('generations_file', type=str, help='generated outputs from inference.py')
-    ap.add_argument('-r', '--references_file', type=str, default=None, help='e.g. `data/Topical-Chat/KGD/test_freq.json`')
+    ap.add_argument('generations', type=str, help='file or diectory of files containing generated outputs from inference.py')
+    ap.add_argument('-r', '--references_file', type=str, default=None, help='e.g. `resources/data/Topical-Chat/KGD/test_freq.json`')
     ap.add_argument('-o', '--outfile', type=str, default=None, help='')
+    ap.add_argument('--output_dir', type=str, default=None, help='')
 
     return ap.parse_args()
 
@@ -139,8 +140,6 @@ def score_kgd_generation(
 
     results = {}
 
-    # TODO: check if system outputs are valid
-    # breakpoint()
     validate_system_outputs(sys_outputs)
 
     results.update(compute_reference_free_metrics(sys_outputs, verbose=verbose))
@@ -169,23 +168,47 @@ def write_to_csv(results: Dict, outfile: Optional[str]):
 
 def main(args):
 
-    sys_outputs = read_lines(args.generations_file)
-    source = read_json_lines(args.references_file) if args.references_file is not None else None
-    
-    refs_t = [[i] for i in source['target']]
-    refs_k = [[i] for i in source['knowledge']]
-    refs_d = [[' '.join(i)] for i in source['turns']]
+    if Path(args.generations).is_dir(): # run evaluation for each file in the directory
+        results = []
+        for generations_file in Path(args.generations).glob('*.txt'):
+            print(f'Processing {generations_file}')
+            sys_outputs = read_lines(generations_file)
+            source = read_json_lines(args.references_file) if args.references_file is not None else None
 
-    results = score_kgd_generation(
-        sys_outputs=sys_outputs,
-        targets=refs_t,
-        knowledge_snippets=refs_k,
-        dialogs=refs_d,
-        )
+            refs_t = [[i] for i in source['target']]
+            refs_k = [[i] for i in source['knowledge']]
+            refs_d = [[' '.join(i)] for i in source['turns']]
 
-    results['file'] = args.generations_file
-    
-    write_to_csv(results, args.outfile)
+            result = score_kgd_generation(
+                sys_outputs=sys_outputs,
+                targets=refs_t,
+                knowledge_snippets=refs_k,
+                dialogs=refs_d,
+            )
+            result['file'] = generations_file.name
+            results.append(result)
+        df = pd.DataFrame(results)    
+        df.to_csv(outfile, index=False)
+
+    elif Path(args.generations).is_file():
+
+        sys_outputs = read_lines(args.generations)
+        source = read_json_lines(args.references_file) if args.references_file is not None else None
+        
+        refs_t = [[i] for i in source['target']]
+        refs_k = [[i] for i in source['knowledge']]
+        refs_d = [[' '.join(i)] for i in source['turns']]
+
+        results = score_kgd_generation(
+            sys_outputs=sys_outputs,
+            targets=refs_t,
+            knowledge_snippets=refs_k,
+            dialogs=refs_d,
+            )
+
+        results['file'] = args.generations_file
+        
+        write_to_csv(results, args.outfile)
 
 if __name__ == '__main__':
     args = set_args()
