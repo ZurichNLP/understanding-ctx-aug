@@ -132,7 +132,8 @@ echo "TASK: $TASK" | tee -a "$LOG_DIR/MAIN"
 echo "MODEL_ID: $MODEL_ID" | tee -a "$LOG_DIR/MAIN"
 echo "PRETRAIN_SAVE_DIR: $PRETRAIN_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "CONVERT_SAVE_DIR: $CONVERT_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
-echo "FINETUNE_SAVE_DIR: $FINETUNE_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
+echo "FINETUNE_SAVE_DIR_1: $FINETUNE_SAVE_DIR_1" | tee -a "$LOG_DIR/MAIN"
+echo "FINETUNE_SAVE_DIR_2: $FINETUNE_SAVE_DIR_2" | tee -a "$LOG_DIR/MAIN"
 echo "RESULTS_DIR: $RESULTS_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "LOG_DIR: $LOG_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
@@ -212,4 +213,4 @@ id_generate_2=$(
     -m "$FINETUNE_SAVE_DIR_2" -b 120 -o "$RESULTS_DIR"
 )
 
-echo "  id_generate: $id_generate_2 | $LOG_DIR/$id_generate_2.out" | tee -a "$LOG_DIR/MAIN"
+echo "  id_generate_2: $id_generate_2 | $LOG_DIR/$id_generate_2.out" | tee -a "$LOG_DIR/MAIN"

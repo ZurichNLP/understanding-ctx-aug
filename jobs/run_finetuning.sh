@@ -104,8 +104,4 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-# import functions
-source finetune.sh
-
-
-echo "Launching finetuning..." && finetune_for_kgd "$INPUT_DIR" "$OUTPUT_DIR" "$SEED" "$IS_ENCODER_DECODER" "$TIE_ENCODER_DECODER"
+bash finetune.sh "$INPUT_DIR" "$OUTPUT_DIR" "$SEED" "$IS_ENCODER_DECODER" "$TIE_ENCODER_DECODER"
