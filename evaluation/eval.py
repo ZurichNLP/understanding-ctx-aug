@@ -123,12 +123,56 @@ def validate_system_outputs(sys_outputs: List[str]):
     """
     problematic = []
     for i in range(len(sys_outputs)):
-        if len(sys_outputs[i].strip().split()) <= 1:
+        if len(sys_outputs[i].strip().split()) < 1:
             sys_outputs[i] = 'n/a.'
-            problematic.append(i)
+            problematic.append(i+1) # offset by 1 to match line number in file
     if len(problematic) > 0:
         print(f'[!] {len(problematic)} problematic system outputs: Check the following lines: {problematic}')
     return sys_outputs    
+
+def parse_args_from_file(file: Path):
+    """
+    hack to parse args from a generation file for post-hoc evaluation
+    """
+    # breakpoint()
+    model_name_or_path = str(file.parents[2])
+    checkpoint_dir = str(file.parents[1].name)
+    
+    file_args = file.stem.split('_')
+    # ['generationstest', 'freq', 'seed=0', 'ml=40', 'lp=1.0', 'ns=1', 'bs=4', 'ds=1', 'temp=0.7', 'tk=0', 'tp=0.9']
+    test_file = file_args[0][11:]+'_'+file_args[1]+'.json'
+    text_column = 'dialog'
+    summary_column = 'target'
+    knowledge_column = 'knowledge'
+    batch_size = 120
+    max_length = int(file_args[3].split('=')[1])
+    do_sample = True if file_args[7].split('=')[1] == '1' else False
+    top_p = float(file_args[10].split('=')[1])
+    top_k = int(file_args[9].split('=')[1])
+    temperature = float(file_args[8].split('=')[1])
+    beam_size = int(file_args[7].split('=')[1])
+    num_return_sequences = int(file_args[6].split('=')[1])
+    write_to_file = 'auto' #str(file)
+    seed = int(file_args[2].split('=')[1])
+        
+    return {
+        'model_name_or_path': model_name_or_path,
+        'checkpoint_dir': checkpoint_dir,
+        'test_file': test_file,
+        'text_column': text_column,
+        'summary_column': summary_column,
+        'knowledge_column': knowledge_column,
+        'batch_size': batch_size,
+        'max_length': max_length,
+        'do_sample': do_sample,
+        'top_p': top_p,
+        'top_k': top_k,
+        'temperature': temperature,
+        'beam_size': beam_size,
+        'num_return_sequences': num_return_sequences,
+        'write_to_file': write_to_file,
+        'seed': seed
+    }
 
 def score_kgd_generation(
     sys_outputs: List[str], 
@@ -157,7 +201,6 @@ def score_kgd_generation(
 
 
 def write_to_csv(results: Dict, outfile: Optional[str]):
-
     df = pd.DataFrame([results])
     if not outfile:
         print(df.to_string())
@@ -167,28 +210,64 @@ def write_to_csv(results: Dict, outfile: Optional[str]):
     return
 
 def main(args):
-
     if Path(args.generations).is_dir(): # run evaluation for each file in the directory
-        results = []
-        for generations_file in Path(args.generations).glob('*.txt'):
-            print(f'Processing {generations_file}')
-            sys_outputs = read_lines(generations_file)
-            source = read_json_lines(args.references_file) if args.references_file is not None else None
+        # this is a bit hacky and only intended for post-hoc evalautions of pipeline runs...
+        for exp_id in ['baseline', 'qu_ctxt_aug1', 'qu_ctxt_aug5', 'xa_dialog', 'xa_dialog+qu_ctxt_aug5', 'xa_knowledge', 'xa_knowledge+qu_ctxt_aug5']:
+            if exp_id == 'baseline':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9.txt'))
+            elif exp_id == 'qu_ctxt_aug1':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=1-questions-10.txt'))
+            elif exp_id == 'qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-questions-10.txt'))
+            elif exp_id == 'xa_dialog':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog.txt'))
+            elif exp_id == 'xa_dialog+qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog_ctxt=5-questions-10.txt'))
+            elif exp_id == 'xa_knowledge':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge.txt'))
+            elif exp_id == 'xa_knowledge+qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-questions-10.txt'))
+            
+            assert len(generations_files) != 0, f'No generations files found for {exp_id} in {args.generations}'
 
-            refs_t = [[i] for i in source['target']]
-            refs_k = [[i] for i in source['knowledge']]
-            refs_d = [[' '.join(i)] for i in source['turns']]
+            results = []
+            for generations_file in generations_files:
+                print(f'Processing {generations_file}')
+                sys_outputs = read_lines(generations_file)
+                source = read_json_lines(args.references_file) if args.references_file is not None else None
+                
+                exp_args = parse_args_from_file(generations_file)
+                
+                refs_t = [[i] for i in source['target']]
+                refs_k = [[i] for i in source['knowledge']]
+                refs_d = [[' '.join(i)] for i in source['turns']]
 
-            result = score_kgd_generation(
-                sys_outputs=sys_outputs,
-                targets=refs_t,
-                knowledge_snippets=refs_k,
-                dialogs=refs_d,
-            )
-            result['file'] = generations_file.name
-            results.append(result)
-        df = pd.DataFrame(results)    
-        df.to_csv(outfile, index=False)
+                scores = score_kgd_generation(
+                    sys_outputs=sys_outputs,
+                    targets=refs_t,
+                    knowledge_snippets=refs_k,
+                    dialogs=refs_d,
+                )
+                
+                result = {**exp_args, **scores}
+                
+                # results keys should contain the following columns
+                assert set(result.keys()) == set(
+                    ['model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
+                    'knowledge_column', 'batch_size', 'max_length', 'do_sample', 'top_p', 'top_k', 'temperature', 
+                    'beam_size', 'num_return_sequences', 'write_to_file', 'seed', 'uniq', 'qc_turn_level', 
+                    'qc_sent_level', 'ppl_mean', 'ppl_std', 'intra_dist1', 'intra_dist2', 'inter_dist1', 
+                    'inter_dist2', 'bleu_t', 'rouge1_t', 'meteor_t', 'bleu_k', 'rouge1_k', 'meteor_k', 
+                    'bleu_d', 'rouge1_d', 'meteor_d']), f'Unexpected results keys: {set(result.keys())}'
+
+                results.append(result)
+            
+            model = set([r['model_name_or_path'] for r in results])
+            assert len(model) == 1, f'Found multiple models in {generations_files}'
+
+            outfile = Path(args.output_dir) / f"{model.split('/')[-1]}-{exp_id}.csv"
+            print(f'writing results to {outfile} ...')
+            write_to_csv(result, outfile)
 
     elif Path(args.generations).is_file():
 
