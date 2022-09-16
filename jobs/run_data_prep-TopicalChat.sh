@@ -71,3 +71,8 @@ for split in valid_rare valid_freq test_freq test_rare train; do
         --split "$split" \
         --save_dir "$data_dir/KGD"
 done
+
+# extract questions for context augmentation experiments
+python collect_contexts.py \
+    --corpus_file "$data_dir/KGD/train.json" \
+    --outfile "$data_dir/KGD/train_questions.txt"

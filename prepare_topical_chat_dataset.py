@@ -179,7 +179,21 @@ class TopicalChat:
                 if not knowledge_text:
                     self.failed.add(knowledge['article'])
 
-                di = dialogue_instance(turns = current_dialogue[:-1], knowledge = knowledge_text, target = current_dialogue[-1])
+                # if current_dialogue[:-1] != self.normalize_whitespace(current_dialogue[:-1]):
+                #     print('whitespace for turns')
+                #     breakpoint()
+                # if knowledge_text != self.normalize_whitespace(knowledge_text):
+                #     print('whitespace for knowledge')
+                #     breakpoint()
+                # if current_dialogue[-1] != self.normalize_whitespace(current_dialogue[-1]):
+                #     print('whitespace for target')
+                #     breakpoint()
+
+                di = dialogue_instance(
+                    turns = self.normalize_whitespace(current_dialogue[:-1]), 
+                    knowledge = self.normalize_whitespace(knowledge_text), 
+                    target = self.normalize_whitespace(current_dialogue[-1])
+                    )
 
                 src_tgt_pairs.append(di)
                 current_dialogue.pop(0)
@@ -200,8 +214,7 @@ class TopicalChat:
             
         return all_dialogues
 
-    @staticmethod
-    def write_to_file(dialogues: List, save_dir: str, shuffle: bool = False, seed: int = 42) -> None:
+    def write_to_file(self, dialogues: List, save_dir: str, shuffle: bool = False, seed: int = 42) -> None:
 
         if not Path(save_dir).exists():
             Path(save_dir).mkdir(parents=True)
@@ -219,6 +232,20 @@ class TopicalChat:
                 f.write(json.dumps(asdict(dialogue), ensure_ascii=False) + '\n')
             print(f'Wrote {c} dialogues to {output_file}')
 
+    
+    @staticmethod
+    def normalize_whitespace(text: Union[List, str]) -> Union[List, str]:
+    
+        def clean_string(string: str) -> str:
+            string = re.sub(r'\n', ' ', string)
+            string = re.sub(r'\s+', ' ', string)
+            return string.strip()
+
+        if isinstance(text, list):
+            return [clean_string(string) for string in text]
+        else:
+            return clean_string(text)
+        
     @staticmethod
     def tokenize_dialogues(
         dialogues: List, 

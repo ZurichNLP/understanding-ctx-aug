@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Example Usage:
+    python collect_contexts.py \
+        --corpus_file resources/data/Topical-Chat/KGD/train.json \
+        --outfile resources/data/Topical-Chat/KGD/train_questions.txt
+
+"""
+
 import argparse
 from pathlib import Path
+import re
 
 import spacy
 from datasets import load_dataset
@@ -23,17 +32,22 @@ def load_corpus(corpus_file):
         corpus_sents = dataset_dict['train']['target']
     return corpus_sents
 
+def clean(string):
+    """remove speaker tags"""
+    return re.sub(r'<speaker\d>\s?', '', string).strip()
+
 def extract_questions(corpus, nlp, sentence_length_threshold=6):
+    """extract questions from corpus"""
     questions = set()
     for doc in tqdm(nlp.pipe(corpus, batch_size=100, n_process=8), total=len(corpus)):
         for sent in doc.sents:
             if len(sent) >= sentence_length_threshold and sent.text.strip().endswith('?'):
-                questions.add(sent.text)
+                questions.add(clean(sent.text))
     print(f'Found {len(questions)} questions in corpus.')
     return questions
 
 def write_to_outfile(iterable, outfile, total=None):
-    
+
     Path(outfile).parent.mkdir(parents=True, exist_ok=True)
     
     with open(outfile, 'w', encoding='utf8') as f:
