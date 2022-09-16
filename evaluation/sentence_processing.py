@@ -21,17 +21,3 @@ def count_questions(texts: List[str], lang: str = 'en'):
                 text_qu_cnt += 1
         qc.append(text_qu_cnt)
     return np.array(qc)
-
-# import spacy
-# nlp = spacy.load('en_core_web_sm')
-# nlp.add_pipe("sentencizer")
-
-# def count_questions_spacy():
-#     qc = []
-#     for doc in tqdm(nlp.pipe(texts, batch_size=100, n_process=8), desc="Splitting Sentences", total=len(texts)):
-#         doc_qu_cnt = 0
-#         for sent in doc.sents:
-#             if sent.text.strip().endswith('?'):
-#                 doc_qu_cnt += 1
-#         qc.append(doc_qu_cnt)
-#     return np.array(qc)
