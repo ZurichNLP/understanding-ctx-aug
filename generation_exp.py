@@ -78,12 +78,12 @@ experiment_configs = {
         "bias_profile": "dialog",
     },
     "qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/train_questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
     "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/train_questions.txt",
         "context_code_attention_bias_value": 1,
         "max_context_examples": 10,
     },
