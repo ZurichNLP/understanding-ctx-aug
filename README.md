@@ -170,6 +170,15 @@ python test_run.py /scratch/tkew/ctrl_tokens/resources/models/muss_en_mined_hf
 To fine-tune, generate and evaluate a publicly available pre-trained model on slurm, run, e.g.:
 
 ```
+bash jobs/run_public.sh -s 1 -m "facebook/bart-base"
+bash jobs/run_public.sh -s 1 -m "google/t5-small-lm-adapt"
+bash jobs/run_public.sh -s 1 -m "t5-small"
+
+# the following models are encoder-based encoder-decoder models
+bash jobs/run_public_enc_dec.sh -s 1 -m "roberta-base"
+bash jobs/run_public_enc_dec.sh -s 1 -m "bert-base-cased"
+```
+<!-- ```
 roberta_base_ft_jid=$(sbatch jobs/run_finetuning.sh -i "roberta-base" -o resources/models/seed_1984/ft/roberta_base -s 1984 | sed 's/Submitted batch job //')
 roberta_base_gen_jid=$(sbatch --dependency=afterany:$roberta_base_ft_jid jobs/run_generation_exp.sh -m resources/models/seed_1984/ft/roberta_base | sed 's/Submitted batch job //')
 
@@ -181,12 +190,17 @@ bart_base_gen_jid=$(sbatch --dependency=afterany:$bart_base_ft_jid jobs/run_gene
 
 t5_small_ft_jid=$(sbatch jobs/run_finetuning.sh -i "t5-small" -o resources/models/seed_1984/ft/t5_small -s 1984 | sed 's/Submitted batch job //')
 t5_small_gen_jid=$(sbatch --dependency=afterany:$t5_small_ft_jid jobs/run_generation_exp.sh  -m resources/models/seed_1984/ft/t5_small | sed 's/Submitted batch job //')
-```
+``` -->
 
-To run a new experiment with small (mini) models involving pre-training, fine-tuning and generation with evaluation, use `jobs/run.sh`, specifying the random seed and the yml config with BART's denoising args, e.g.:
+## Controlled Experiments
+
+To run a new controlled experiment with small (mini) models involving pre-training, fine-tuning and generation with evaluation, use `jobs/run.sh`, specifying the random seed and the yml config with BART's denoising args, e.g.:
 
 ```
-bash jobs/run.sh -s 85 -c exp_configs/SI_bart.yml
+bash jobs/run_mini_bart.sh -s 1 -c exp_configs/SI_bart.yml
+bash jobs/run_mini_bart.sh -s 1 -c exp_configs/SI_t5.yml
+bash jobs/run_mini_bart.sh -s 1 -c exp_configs/SI_mass.yml
+bash jobs/run_mini_bart.sh -s 1 -c exp_configs/SI_PS.yml
 ```
 
 <!-- The simplest way to run all experiment scripts is to launch the pipeline jobs with SLURM dependencies.
@@ -199,6 +213,8 @@ jid1=$(sbatch pretraining/jobs/run_pretraining.sh -p sm_baseline -s 193847 | sed
 jid2=$(sbatch --dependency=afterok:$jid1 jobs/run_finetuning.sh -p resources/models/seed_193847/pt/hf_conv/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 -o resources/models/seed_193847/ft/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 | sed 's/Submitted batch job //')
 jid3=$(sbatch --dependency=afterok:$jid2 jobs/run_generation_exp_parallel.sh -m resources/models/seed_193847/ft/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 -o results/seed_193847 | sed 's/Submitted batch job //')
 ``` -->
+
+
 
 
 

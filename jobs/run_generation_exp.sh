@@ -21,7 +21,6 @@
 
 repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
 batch_size=120
-output_dir="results"
 
 # arguments that are not supported
 print_usage() {
@@ -59,6 +58,11 @@ fi
 
 if [[ -z $model_path ]]; then
     print_missing_arg "[-m model_path]" "model"
+    exit 1
+fi
+
+if [[ -z $output_dir ]]; then
+    print_missing_arg "[-o output_dir]" "output dir for results csv files"
     exit 1
 fi
 

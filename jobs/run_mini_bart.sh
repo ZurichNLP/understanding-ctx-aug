@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # example usage:
-# . jobs/dummy_run.sh -s 85 -c configs/exp1.yml -f 1
+# . jobs/run_mini_bart.sh -s 85 -c exp_configs/SI_t5.yml -s 1
 
 BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
 FORCE=0 # whether to overwrite existing files
@@ -95,21 +95,12 @@ echo "Denoising args: $DENOISING_ARGS"
 DENOISING_ID=$(parse_denoising_args_to_string "$DENOISING_ARGS")
 echo "Denoising args: $DENOISING_ID"
 
-# OLD_MODEL_ID="$MODEL_CONFIG-${TASK}_$DENOISING_METHOD-$DENOISING_ID"
 MODEL_ID="$MODEL_CONFIG-$PT_CONFIG" # simplified model id based on config yml
 LOG_DIR="$SAVE_DIR_PREFIX/seed_$SEED/logs/$MODEL_ID"
 PRETRAIN_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/pt/fairseq/$MODEL_ID"
 CONVERT_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/pt/hf_conv/$MODEL_ID"
 FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/$MODEL_ID"
 RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results"
-
-# echo "Old model id: $OLD_MODEL_ID"
-# echo "Model ID: $MODEL_ID"
-# echo "Log dir: $LOG_DIR"
-# echo "Pretrain save dir: $PRETRAIN_SAVE_DIR"
-# echo "Convert save dir: $CONVERT_SAVE_DIR"
-# echo "Finetune save dir: $FINETUNE_SAVE_DIR"
-# echo "Results dir: $RESULTS_DIR"
 
 #######################################################################
 # INIT LOGGING
