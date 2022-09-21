@@ -26,6 +26,14 @@ except ImportError:
     from tokenization import tokenize_texts
     from novelty import compute_novelty
 
+expected_keys = [
+    'model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
+    'knowledge_column', 'batch_size', 'max_length', 'do_sample', 'top_p', 'top_k', 'temperature', 
+    'beam_size', 'num_return_sequences', 'write_to_file', 'seed', 'uniq', 'qc_turn_level', 
+    'qc_sent_level', 'ppl_mean', 'ppl_std', 'intra_dist1', 'intra_dist2', 'inter_dist1', 
+    'inter_dist2', 'bleu_t', 'rouge1_t', 'meteor_t', 'bleu_k', 'rouge1_k', 'meteor_k', 
+    'bleu_d', 'rouge1_d', 'meteor_d'
+    ]
 
 def set_args():
     ap = argparse.ArgumentParser()
@@ -34,10 +42,23 @@ def set_args():
     ap.add_argument('-o', '--outfile', type=str, default=None, help='')
     ap.add_argument('--output_dir', type=str, default=None, help='')
     ap.add_argument('-v', '--verbose', action='store_true', help='')
+    ap.add_argument('--exp_ids', 
+                    nargs='*', 
+                    type=str, 
+                    default=[
+                        'baseline', 
+                        'qu_ctxt_aug1', 
+                        'qu_ctxt_aug5', 
+                        'xa_dialog', 
+                        'xa_dialog+qu_ctxt_aug5', 
+                        'xa_knowledge', 
+                        'xa_knowledge+qu_ctxt_aug5'
+                        ],
+                    help='experiment ids to run evaluation for (by default, will evaluate outputs for all)')
 
     return ap.parse_args()
 
-def read_lines(file: str, sep: str = '\t'):    
+def read_lines(file: str, sep: str = '\t'):
     lines = []
     with open(file, 'r', encoding='utf8') as f:
         for line in tqdm(f):
@@ -240,21 +261,21 @@ def write_to_csv(results: List[Dict], outfile: Optional[str]):
 def main(args):
     if Path(args.generations).is_dir(): # run evaluation for each file in the directory
         # this is a bit hacky and only intended for post-hoc evalautions of pipeline runs...
-        for exp_id in ['baseline', 'qu_ctxt_aug1', 'qu_ctxt_aug5', 'xa_dialog', 'xa_dialog+qu_ctxt_aug5', 'xa_knowledge', 'xa_knowledge+qu_ctxt_aug5']:
+        for exp_id in args.exp_ids:
             if exp_id == 'baseline':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9.txt'))
             elif exp_id == 'qu_ctxt_aug1':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=1-questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=1-*questions-10.txt'))
             elif exp_id == 'qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-*questions-10.txt'))
             elif exp_id == 'xa_dialog':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog.txt'))
             elif exp_id == 'xa_dialog+qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog_ctxt=5-questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog_ctxt=5-*questions-10.txt'))
             elif exp_id == 'xa_knowledge':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge.txt'))
             elif exp_id == 'xa_knowledge+qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-*questions-10.txt'))
             
             assert len(generations_files) != 0, f'No generations files found for {exp_id} in {args.generations}'
 
@@ -281,15 +302,10 @@ def main(args):
                 result = {**gen_args, **scores}
                 
                 # results keys should contain the following columns
-                assert set(result.keys()) == set(
-                    ['model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
-                    'knowledge_column', 'batch_size', 'max_length', 'do_sample', 'top_p', 'top_k', 'temperature', 
-                    'beam_size', 'num_return_sequences', 'write_to_file', 'seed', 'uniq', 'qc_turn_level', 
-                    'qc_sent_level', 'ppl_mean', 'ppl_std', 'intra_dist1', 'intra_dist2', 'inter_dist1', 
-                    'inter_dist2', 'bleu_t', 'rouge1_t', 'meteor_t', 'bleu_k', 'rouge1_k', 'meteor_k', 
-                    'bleu_d', 'rouge1_d', 'meteor_d']
-                    ), f'Unexpected keys in result dict: {set(result.keys())}'
-
+                if set(result.keys()) != set(expected_keys):
+                    print(f'[!] WARNING: results keys do not match expected keys: {set(result.keys())} vs {set(expected_keys)}')
+                    print(f'This may be due to a change in the evaluation script. If you are sure the results are correct, please update the expected_keys variable.')
+                    
                 results.append(result)
 
             models_evaluated = [r['model_name_or_path'] for r in results]
