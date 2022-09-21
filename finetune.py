@@ -311,7 +311,7 @@ class DataTrainingArguments:
     )
     
     early_stopping_threshold: Optional[float] = field(
-        default=0.01,
+        default=0.0,
         metadata={
             "help": "how much the specified metric must improve to satisfy early stopping conditions"
         },
@@ -405,10 +405,10 @@ def tokenize_function(examples, tokenizer, **kwargs):
     # add bos and eos tokens to input sequence
     if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
         inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
-    elif tokenizer.eos_token_id is not None:
+    else:
         inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
-    else: # if using BERT2BERT, we use the sep token as a stand-in for the eos token
-        inputs = [[tokenizer.sep_token_id] + inp_tok for inp_tok in inputs]
+    # else: # if using BERT2BERT, we use the sep token as a stand-in for the eos token
+    #     inputs = [[tokenizer.sep_token_id] + inp_tok for inp_tok in inputs]
 
     model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
 
@@ -489,6 +489,7 @@ def main():
         "t5-large",
         "t5-3b",
         "t5-11b",
+        "google/t5-small-lm-adapt",
     ]:
         # update training_args.fp16 with T5 models, since this seems unstable
         training_args.fp16 = False
@@ -558,31 +559,23 @@ def main():
     if model_args.is_encoder_decoder:
         if '+' in model_args.model_name_or_path:
             encoder_name, decoder_name = model_args.model_name_or_path.split('+')
+            logger.info(f"Loading {encoder_name}-{decoder_name} as encoder-decoder")
+            raise NotImplementedError("We don't support encoder-decoder models with two different encoders and decoders yet.")
+            # For this to work we need to do some magic to utilize both tokenizers...
+            # e.g. https://huggingface.co/patrickvonplaten/bert2gpt2-cnn_dailymail-fp16
+            # model.config.vocab_size = model.config.decoder.vocab_size
         else:
             encoder_name = decoder_name = model_args.model_name_or_path
 
-    # if model_args.model_name_or_path in ['bert-base-cased+gpt2']:
-    #     model = EncoderDecoderModel.from_encoder_decoder_pretrained("bert-base-cased", "gpt2", tie_encoder_decoder=True)
-    #     model_args.model_name_or_path = "bert-base-cased"
-    #     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
-    #     model.config.decoder_start_token_id = tokenizer.cls_token_id
-    #     model.config.pad_token_id = tokenizer.pad_token_id
-    #     model.config.bos_token_id = tokenizer.cls_token_id
-    #     model.config.eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else tokenizer.sep_token_id
-    #     # For this to work we need to do some magic to utilize both tokenizers...
-    #     # e.g. https://huggingface.co/patrickvonplaten/bert2gpt2-cnn_dailymail-fp16
-    #     model.config.vocab_size = model.config.decoder.vocab_size
-        
-    #     model.encoder.resize_token_embeddings(len(tokenizer))
-    #     model.decoder.resize_token_embeddings(len(tokenizer))
-        logger.info(f"Loading {encoder_name}-{decoder_name} as encoder-decoder")
         model = EncoderDecoderModel.from_encoder_decoder_pretrained(encoder_name, decoder_name, tie_encoder_decoder=model_args.tie_encoder_decoder)
         logger.info(f"Loaded {encoder_name}-{decoder_name} as encoder-decoder. Tied encoder-decoder: {model_args.tie_encoder_decoder}")
         tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
         model.config.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.pad_token_id = tokenizer.pad_token_id
-        model.config.bos_token_id = tokenizer.cls_token_id
-        model.config.eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else tokenizer.sep_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id        
+        if tokenizer.bos_token_id is None: # BERT doesn't have a bos_token_id, so repurpose cls_token_id
+            model.config.bos_token_id = tokenizer.bos_token_id = tokenizer.cls_token_id
+        if tokenizer.eos_token_id is None: # BERT doesn't have a eos_token_id, so repurpose sep_token_id
+            model.config.eos_token_id = tokenizer.eos_token_id = tokenizer.sep_token_id
         model.config.vocab_size = model.config.decoder.vocab_size
         
         model.encoder.resize_token_embeddings(len(tokenizer))
