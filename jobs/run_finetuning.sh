@@ -13,6 +13,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
+# defaults
 BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
 SEED=42
 IS_ENCODER_DECODER=False

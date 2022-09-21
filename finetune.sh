@@ -60,4 +60,5 @@ python finetune.py \
     --load_best_model_at_end True \
     --metric_for_best_model "loss" \
     --predict_with_generate True \
+    --early_stopping True \
     --report_to "wandb" | tee "$log_file"

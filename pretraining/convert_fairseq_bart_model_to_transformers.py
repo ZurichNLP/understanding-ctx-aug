@@ -71,20 +71,22 @@ def main():
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
 
-    # tokenizer = PreTrainedTokenizerFast(
-    #     tokenizer_file=args.tokenizer,
-    #     # bos_token="<s>",
-    #     # eos_token="</s>",
-    #     # unk_token="<unk>",
-    #     # pad_token="<pad>",
-    #     # mask_token="<mask>",
-    #     # cls_token="</s>",
-    #     # sep_token="</s>",
-    # )
-
     state_dict = torch.load(args.checkpoint, map_location="cpu")["model"]
         
     vocab_size = state_dict["encoder.embed_tokens.weight"].size()[0]
+    
+    # add additional sentinal mask tokens used by for t5 if not accounted for in vocab
+    if vocab_size > tokenizer.vocab_size:
+        print('-'*70)
+        sentinel_tokens = [f"<extra_id_{i}>" for i in reversed(range(vocab_size - tokenizer.vocab_size))]
+        tokenizer.add_tokens(sentinel_tokens)
+        print(f'Added {len(sentinel_tokens)} sentinel tokens to tokenizer to match model vocab size:')
+        sentinel_token_ids = tokenizer.convert_tokens_to_ids(sentinel_tokens)
+        print(f'Sentinel indices from: {sentinel_token_ids[:3]} ... {sentinel_token_ids[-3:]}')
+        print(f'Sentinel tokens from: {sentinel_tokens[:3]} ... {sentinel_tokens[-3:]}')
+        print(f'Final dictionary size: {len(tokenizer)}')
+        print('-'*70)
+
     max_position_embeddings = state_dict["encoder.embed_positions.weight"].size()[0]
     encoder_ffn_dim = state_dict["encoder.layers.0.fc1.bias"].size()[0]
     decoder_ffn_dim = state_dict["decoder.layers.0.fc1.bias"].size()[0]
