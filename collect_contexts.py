@@ -5,7 +5,7 @@
 Example Usage:
     python collect_contexts.py \
         --corpus_file resources/data/Topical-Chat/KGD/train.json \
-        --outfile resources/data/Topical-Chat/KGD/train_questions.txt
+        --outfile resources/data/Topical-Chat/KGD/contexts/train_questions.txt
 
 """
 

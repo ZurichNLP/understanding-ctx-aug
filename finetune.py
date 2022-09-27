@@ -239,7 +239,7 @@ class DataTrainingArguments:
             )
         },
     )
-    max_train_samples: Optional[int] = field(
+    max_train_samples: Optional[float] = field(
         default=None,
         metadata={
             "help": (
@@ -248,7 +248,7 @@ class DataTrainingArguments:
             )
         },
     )
-    max_eval_samples: Optional[int] = field(
+    max_eval_samples: Optional[float] = field(
         default=None,
         metadata={
             "help": (
@@ -257,7 +257,7 @@ class DataTrainingArguments:
             )
         },
     )
-    max_predict_samples: Optional[int] = field(
+    max_predict_samples: Optional[float] = field(
         default=None,
         metadata={
             "help": (
@@ -745,6 +745,12 @@ def main():
             raise ValueError("--do_train requires a train dataset")
         train_dataset = raw_datasets["train"]
         if data_args.max_train_samples is not None:
+            data_args.max_train_samples = (
+                int(len(train_dataset) * data_args.max_train_samples) 
+                if data_args.max_train_samples <= 1.0 
+                else int(data_args.max_train_samples)
+            )
+            logger.info(f"Using {data_args.max_train_samples} samples for training!")
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
         with training_args.main_process_first(desc="train dataset map pre-processing"):
@@ -778,6 +784,12 @@ def main():
             raise ValueError("--do_eval requires a validation dataset")
         eval_dataset = raw_datasets["validation"]
         if data_args.max_eval_samples is not None:
+            data_args.max_eval_samples = (
+                int(len(eval_dataset) * data_args.max_eval_samples) 
+                if data_args.max_eval_samples <= 1.0 
+                else int(data_args.max_eval_samples)
+            )
+            logger.info(f"Using {data_args.max_eval_samples} samples for evaluation!") 
             max_eval_samples = min(len(eval_dataset), data_args.max_eval_samples)
             eval_dataset = eval_dataset.select(range(max_eval_samples))
         with training_args.main_process_first(desc="validation dataset map pre-processing"):
@@ -810,6 +822,12 @@ def main():
             raise ValueError("--do_predict requires a test dataset")
         predict_dataset = raw_datasets["test"]
         if data_args.max_predict_samples is not None:
+            data_args.max_predict_samples = (
+                int(len(predict_dataset) * data_args.max_predict_samples) 
+                if data_args.max_predict_samples <= 1.0 
+                else int(data_args.max_predict_samples)
+            )
+            logger.info(f"Using {data_args.max_predict_samples} samples for testing!") 
             max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
         with training_args.main_process_first(desc="prediction dataset map pre-processing"):

@@ -442,9 +442,9 @@ class InferenceModel:
         else:
             if not self.gen_args.bias_profile:
                 if self.gen_args.cross_attention_bias_value == 0:
-                    print(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}. WARNING: This will effectively set all cross attention weights to 0!')
+                    logger.warning(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}. WARNING: This will effectively set all cross attention weights to 0!')
                 else:
-                    print(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}.')
+                    logger.warning(f'[!] No bias profile specified, with a cross attention bias value of {self.gen_args.cross_attention_bias_value}.')
                 cross_attention_bias[:] = self.gen_args.cross_attention_bias_value
 
             elif self.gen_args.bias_profile == 'knowledge': # see description in paper (p. 5)
@@ -497,7 +497,7 @@ class InferenceModel:
             cross_attention_bias = torch.cat([context_code_attention_bias, cross_attention_bias], dim=-1)
             return cross_attention_bias        
         elif context_code is not None:
-            print(f"[!] You are using context code but not cross attention bias. This is not recommended. Use the default cross attention bias value of 1.")
+            logger.warning(f"[!] You are using context code but not cross attention bias. This is not recommended. Use the default cross attention bias value of 1.")
         return cross_attention_bias
 
     @staticmethod
@@ -505,7 +505,7 @@ class InferenceModel:
         """
         Loads the context sentences from the given file.
         """
-        print(context_file)
+        
         if context_file == 'dummy':       
             context_examples = [
                 'Am I a teacher?',
@@ -526,10 +526,11 @@ class InferenceModel:
                 for line in tqdm(f):
                     context_examples.append(line.strip())
             max_context_examples = min(max_context_examples, len(context_examples))
-            print(f'set random seed {seed}')
+            logger.info(f'set random seed {seed}')
             random.seed(seed)
             context_examples = list(random.sample(context_examples, max_context_examples))
-            logger.info(f'loaded {len(context_examples)} context examples')
+            logger.info(f'loaded {len(context_examples)} context examples from {context_file}')
+            logger.info(f'first 10 context examples: {context_examples[:10]}')    
 
         else:
             raise RuntimeError(f'Failed to read file {context_file}!')

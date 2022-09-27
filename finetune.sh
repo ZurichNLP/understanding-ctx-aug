@@ -12,6 +12,7 @@ save_dir=$2
 seed=$3
 is_encoder_decoder=${4:-False}
 tie_encoder_decoder=${5:-False}
+max_train_samples=${6:-1.0}
 
 data_dir="resources/data/Topical-Chat/KGD"
 log_file="$save_dir/finetune.log"
@@ -61,4 +62,5 @@ python finetune.py \
     --metric_for_best_model "loss" \
     --predict_with_generate True \
     --early_stopping True \
+    --max_train_samples "$max_train_samples" \
     --report_to "wandb" | tee "$log_file"

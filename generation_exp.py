@@ -15,6 +15,7 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--model_dir", type=str, required=True, help="path to the finetuned model folder")
     ap.add_argument("-o", "--output_dir", type=str, default='results', required=False, help="path to the output directory for result csvs")
+    ap.add_argument("-g", "--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation results")
     ap.add_argument("-d", "--debug", action="store_true", help="")
     ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
     ap.add_argument("-b", "--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
@@ -30,6 +31,7 @@ def set_args():
             "qu_ctxt_aug1",
             "xa_knowledge+qu_ctxt_aug5",
             "xa_dialog+qu_ctxt_aug5",
+            "tagged_qu_ctxt_aug5", # for debugging
         ],
         help="experiment id"
         )
@@ -78,12 +80,17 @@ experiment_configs = {
         "bias_profile": "dialog",
     },
     "qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/train_questions.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "tagged_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions_tagged.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
     "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/train_questions.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
         "max_context_examples": 10,
     },
@@ -116,6 +123,8 @@ if __name__ == "__main__":
         gen_args.update(experiment_configs.get(exp_id, {}))
     if args.debug:
         gen_args.update(debug_config)
+    if args.generation_dir:
+        gen_args['output_dir'] = args.generation_dir
 
     results = []
     for seed in args.seed:
