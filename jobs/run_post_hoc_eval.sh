@@ -7,7 +7,7 @@
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_post_hoc_eval.sh  -m resources/models/seed_1984/ft/bert_base/
+# sbatch jobs/run_post_hoc_eval.sh -m resources/models/seed_1984/ft/bert_base/
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
@@ -68,6 +68,7 @@ if [[ -z $output_dir ]]; then
     # will write results to resources/models/seed_1984/results
     output_dir="$model_path/../../results"
     echo "Writing results to $output_dir"
+    mkdir -p "$output_dir"
 fi
 
 # cd to base dir

@@ -14,14 +14,14 @@ import pandas as pd
 try:
     from .perplexity import score_ppl
     from .sentence_processing import count_questions
-    from .reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match
+    from .reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
     from .distinct import distinct_n
     from .tokenization import tokenize_texts
     from .novelty import compute_novelty
 except ImportError:
     from perplexity import score_ppl
     from sentence_processing import count_questions
-    from reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match
+    from reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
     from distinct import distinct_n
     from tokenization import tokenize_texts
     from novelty import compute_novelty
@@ -96,46 +96,45 @@ def compute_reference_free_metrics(
     reference-free metrics
     """
 
-    results = {}
+    result = {}
 
-    results['uniq'] = uniq_response_ratio(sys_outputs)
+    result['uniq'] = uniq_response_ratio(sys_outputs)
     
     # question count
     qc = count_questions(sys_outputs)  
-    results['qc_turn_level'] = sum([1 for i in qc if i > 0]) / len(qc)
-    results['qc_sent_level'] = qc.sum() / len(qc)
+    result['qc_turn_level'] = sum([1 for i in qc if i > 0]) / len(qc)
+    result['qc_sent_level'] = qc.sum() / len(qc)
     
     # perplexity
     ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)
-    results['ppl_mean'] = ppl_mean
-    results['ppl_std'] = ppl_std
+    result['ppl_mean'] = ppl_mean
+    result['ppl_std'] = ppl_std
 
     # distint-n
     dist = distinct_n(tokenize_texts(sys_outputs)) # returns dict
-    results.update(dist)
+    result.update(dist)
 
-    return results
+    return result
 
 def compute_reference_based_metrics(
     sys_outputs: List[str], 
     references: List[List[str]],
     tag: str = '',
+    is_tokenized: bool = False,
     verbose: bool = False
     ) -> Dict:
-
     """
     reference-based metrics (BLEU, ROUGE, METEOR) for KGD
 
     :tag: 't' for target, 'k' for knowledge, 'd' for dialog
     """
-    results = {}
+    result = {}
+    
+    print(f'Computing reference-based metrics for {tag}...')
 
-    if verbose:
-        print(f'Computing reference-based metrics for {tag}...')
-
-    bleu = compute_bleu(sys_outputs, references, is_tokenized=False, verbose=verbose)
-    rouge = compute_rouge(sys_outputs, references, is_tokenized=False, verbose=verbose)
-    meteor = compute_meteor(sys_outputs, references, is_tokenized=False, verbose=verbose)
+    bleu = compute_bleu(sys_outputs, references, is_tokenized=is_tokenized, verbose=verbose)
+    rouge = compute_rouge(sys_outputs, references, is_tokenized=is_tokenized, verbose=verbose)
+    meteor = compute_meteor(sys_outputs, references, is_tokenized=is_tokenized, verbose=verbose)
     exact = compute_exact_match(
         sys_outputs, 
         [' '.join(r) for r in references], 
@@ -146,21 +145,30 @@ def compute_reference_based_metrics(
         ignore_numbers = False,
         verbose=verbose
         )
-    novelty = compute_novelty(sys_outputs, references, is_tokenized=False, ignore_case=True, N=4, verbose=verbose)
+    
+    if tag == 'target': # we only compute self-bleu for once since the references are the same for all tags
+        self_bleu = compute_self_bleu(sys_outputs, use_subset=200, is_tokenized=is_tokenized, verbose=verbose)
+    else:
+        self_bleu = None
+
+    novelty = compute_novelty(sys_outputs, references, is_tokenized=is_tokenized, ignore_case=True, N=4, verbose=verbose)
 
     if tag:
         tag = '_' + tag[0]
 
-    results[f'bleu{tag}'] = bleu['score'] if bleu is not None else None
-    results[f'rouge1{tag}'] = rouge['rouge1'] if rouge is not None else None
-    results[f'meteor{tag}'] = meteor['meteor'] if meteor is not None else None
-    results[f'exact{tag}'] = exact['exact_match'] if exact is not None else None
-    results[f'novelty{tag}_1gram'] = novelty.get('1_gram') if novelty is not None else None
-    results[f'novelty{tag}_2gram'] = novelty.get('2_gram') if novelty is not None else None
-    results[f'novelty{tag}_3gram'] = novelty.get('3_gram') if novelty is not None else None
-    results[f'novelty{tag}_4gram'] = novelty.get('4_gram') if novelty is not None else None
+    result[f'bleu{tag}'] = bleu['score'] if bleu is not None else None
+    result[f'rouge1{tag}'] = rouge['rouge1'] if rouge is not None else None
+    result[f'rouge2{tag}'] = rouge['rouge2'] if rouge is not None else None
+    result[f'rougeL{tag}'] = rouge['rougeL'] if rouge is not None else None
+    result[f'meteor{tag}'] = meteor['meteor'] if meteor is not None else None
+    result[f'exact{tag}'] = exact['exact_match'] if exact is not None else None
+    result[f'self_bleu{tag}'] = self_bleu['score'] if self_bleu is not None else None
+    result[f'novelty{tag}_1gram'] = novelty.get('1_gram') if novelty is not None else None
+    result[f'novelty{tag}_2gram'] = novelty.get('2_gram') if novelty is not None else None
+    result[f'novelty{tag}_3gram'] = novelty.get('3_gram') if novelty is not None else None
+    result[f'novelty{tag}_4gram'] = novelty.get('4_gram') if novelty is not None else None
 
-    return results    
+    return result    
 
 def validate_system_outputs(sys_outputs: List[str]) -> List[str]:
     """
@@ -179,12 +187,11 @@ def parse_args_from_file(file: Path) -> Dict:
     """
     hack to parse args from a generation file for post-hoc evaluation
     """
-    # breakpoint()
+
     model_name_or_path = str(file.parents[2])
     checkpoint_dir = str(file.parents[1].name)
     
-    file_args = file.stem.split('_')
-    # ['generationstest', 'freq', 'seed=0', 'ml=40', 'lp=1.0', 'ns=1', 'bs=4', 'ds=1', 'temp=0.7', 'tk=0', 'tp=0.9']
+    file_args = file.stem.split('_') # e.g. ['generationstest', 'freq', 'seed=0', 'ml=40', 'lp=1.0', 'ns=1', 'bs=4', 'ds=1', 'temp=0.7', 'tk=0', 'tp=0.9']
     test_file = file_args[0][11:]+'_'+file_args[1]+'.json'
     text_column = 'turns'
     summary_column = 'target'
@@ -222,34 +229,40 @@ def parse_args_from_file(file: Path) -> Dict:
 def score_kgd_generation(
     sys_outputs: List[str], 
     targets: Optional[List[str]],
-    knowledge_snippets: Optional[List[str]],
-    dialogs: Optional[List[str]],
+    knowledge_snippets: Optional[List[str]] = None,
+    dialogs: Optional[List[str]] = None,
+    sys_inputs: Optional[List[str]] = None,
     verbose: bool = False
     ):
 
     start_time = time.time()
-    results = {}
+    result = {}
 
     validate_system_outputs(sys_outputs)
 
-    results.update(compute_reference_free_metrics(sys_outputs, verbose=verbose))
+    result.update(compute_reference_free_metrics(sys_outputs, verbose=verbose))
     
     if targets is not None:
-        results.update(compute_reference_based_metrics(sys_outputs, targets, 'target', verbose))
+        result.update(compute_reference_based_metrics(sys_outputs, targets, 'target', verbose))
     if knowledge_snippets is not None:
-        results.update(compute_reference_based_metrics(sys_outputs, knowledge_snippets, 'knowledge', verbose))
+        result.update(compute_reference_based_metrics(sys_outputs, knowledge_snippets, 'knowledge', verbose))
     if dialogs is not None:
-        results.update(compute_reference_based_metrics(sys_outputs, dialogs, 'dialog', verbose))
-    
+        result.update(compute_reference_based_metrics(sys_outputs, dialogs, 'dialog', verbose))
+    if knowledge_snippets is not None and dialogs is not None:
+        combined_inputs = [[' '.join(knowledge_snippets[i] + dialogs[i])] for i in range(len(knowledge_snippets))]
+        result.update(compute_reference_based_metrics(sys_outputs, combined_inputs, 'source', verbose))
+    if sys_inputs is not None: # using model inputs as references
+        result.update(compute_reference_based_metrics(sys_outputs, sys_inputs, 'source', verbose))
+
     end_time = time.time()
     
     print(f'Scored {len(sys_outputs)} system outputs in {end_time-start_time:.2f} seconds.')
 
-    return results
+    return result
 
 
-def write_to_csv(results: List[Dict], outfile: Optional[str]):
-    df = pd.DataFrame(results)
+def write_to_csv(result: List[Dict], outfile: Optional[str]):
+    df = pd.DataFrame(result)
     if not outfile:
         print(df.to_csv(index=False))
     else:
@@ -300,19 +313,20 @@ def main(args):
                 )
                 
                 result = {**gen_args, **scores}
-                
                 # results keys should contain the following columns
                 if set(result.keys()) != set(expected_keys):
-                    print(f'[!] WARNING: results keys do not match expected keys: {set(result.keys())} vs {set(expected_keys)}')
-                    print(f'This may be due to a change in the evaluation script. If you are sure the results are correct, please update the expected_keys variable.')
-                    
+                    print(f'[!] WARNING: results keys do not match expected keys! This may be due to a change in the evaluation script. If you are sure the results are correct, please update the expected_keys variable.')
+                    print(f'\tExpected: {set(expected_keys)}')
+                    print(f'\tFound: {set(result.keys())}')
+
+                print(result)
                 results.append(result)
 
             models_evaluated = [r['model_name_or_path'] for r in results]
-            assert len(set(models_evaluated)) == 1, f'Expected 1 model name but found {len(set(models_evaluated))} models in {generations_files}'
+            assert len(set(models_evaluated)) == 1, f'Expected one unique model name but found {len(set(models_evaluated))} models in {generations_files}'
             model_evaluated = models_evaluated[0].split('/')[-1]
             outfile = Path(args.output_dir) / f"{model_evaluated}-{exp_id}.csv"
-            print(f'Writing results to {outfile} ...')
+            print(f'Writing all results to {outfile} ...')
             write_to_csv(results, outfile)
 
     elif Path(args.generations).is_file():
@@ -324,7 +338,7 @@ def main(args):
         refs_k = [[i] for i in source['knowledge']]
         refs_d = [[' '.join(i)] for i in source['turns']]
 
-        results = score_kgd_generation(
+        result = score_kgd_generation(
             sys_outputs=sys_outputs,
             targets=refs_t,
             knowledge_snippets=refs_k,
@@ -332,9 +346,9 @@ def main(args):
             verbose=args.verbose,
             )
 
-        results['file'] = args.generations
+        result['file'] = args.generations
 
-        write_to_csv([results], args.outfile)
+        write_to_csv([result], args.outfile)
 
 if __name__ == '__main__':
     args = set_args()

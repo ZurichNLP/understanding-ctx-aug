@@ -18,6 +18,8 @@ BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False
+MAX_TRAIN_SAMPLES=1.0
+EVAL_RUNS_PER_EPOCH=1
 
 # arguments that are not supported
 print_usage() {
@@ -59,6 +61,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --tie_encoder_decoder)
             TIE_ENCODER_DECODER="$2"
+            shift 2
+            ;;
+        --max_train_samples)
+            MAX_TRAIN_SAMPLES="$2"
+            shift 2
+            ;;
+        --eval_runs_per_epoch)
+            EVAL_RUNS_PER_EPOCH="$2"
             shift 2
             ;;
         -*|--*)
@@ -105,4 +115,11 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-bash finetune.sh "$INPUT_DIR" "$OUTPUT_DIR" "$SEED" "$IS_ENCODER_DECODER" "$TIE_ENCODER_DECODER"
+bash finetune.sh \
+    "$INPUT_DIR" \
+    "$OUTPUT_DIR" \
+    "$SEED" \
+    "$IS_ENCODER_DECODER" \
+    "$TIE_ENCODER_DECODER" \
+    "$MAX_TRAIN_SAMPLES" \
+    "$EVAL_RUNS_PER_EPOCH"

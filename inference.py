@@ -14,13 +14,13 @@ from datasets import load_dataset, load_metric
 import torch
 from transformers import (
     AutoModelForSeq2SeqLM,
-    # EncoderDecoderModel,
     AutoTokenizer,
     HfArgumentParser,
     set_seed,
 )
 
-from finetune import tokenize_function, DataTrainingArguments, ModelArguments
+from data import prepare_topical_chat
+from hf_args import InferenceArguments, DataTrainingArguments, ModelArguments
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -32,156 +32,12 @@ logging.basicConfig(
 )
 log_level = 10 # training_args.get_process_log_level()
 logger.setLevel(log_level)
-# datasets.utils.logging.set_verbosity(log_level)
-# transformers.utils.logging.set_verbosity(log_level)
-# transformers.utils.logging.enable_default_handler()
-# transformers.utils.logging.enable_explicit_format()
-
-@dataclass
-class InferenceArguments:
-    """
-    Arguments pertaining to running generation/inference with pre-trained/fine-tuned model.
-    """
-
-    checkpoint_dir: str = field(
-        default=None,
-        metadata={"help": "Path to fine-tuned model checkpoint"}
-    )
-    
-    output_dir: str = field(
-        default=None,
-        metadata={"help": "Path to output directory"}
-    )
-
-    seed: int = field(
-        default=42,
-        metadata={"help": "random seed"}
-    )
-
-    use_cuda: bool = field(
-        default=True,
-        metadata={"help": "Use GPU if available"}
-    )
-
-    batch_size: int = field(
-        default=3,
-        metadata={"help": "Batch size for predictions"}
-    )
-
-    min_length: int = field(
-        default=None,
-        metadata={"help": "Minimum length of generated text"}
-    )
-
-    max_length: int = field(
-        default=64,
-        metadata={"help": "Maximum length of generated text"}
-    )
-
-    length_penalty: float = field(
-        default=1.0,
-        metadata={"help": "Length penalty for generated text"}
-    )
-
-    no_early_stop: bool = field(
-        default=False,
-        metadata={"help": "Disable early stopping on generate"}
-    )
-
-    num_return_sequences: int = field(
-        default=1,
-        metadata={"help": "Number of sequences to generate"}
-    )
-
-    beam_size: int = field(
-        default=4,
-        metadata={"help": "Number of beams for beam search"}
-    )
-
-    do_sample: bool = field(
-        default=False,
-        metadata={"help": "Sample instead of greedy decoding"}
-    )
-
-    temperature: float = field(
-        default=1.0,
-        metadata={"help": "Temperature for generation"}
-    )
-    
-    top_k: int = field(
-        default=0,
-        metadata={"help": "Number of top k tokens to keep for top-k sampling"}
-    )
-
-    top_p: float = field(
-        default=0.0,
-        metadata={"help": "Probability of top-p sampling"}
-    )
-
-    # use_cross_attention_bias: bool = field(
-    #     default=False,
-    #     metadata={"help": "Use cross attention"}
-    # )
-
-    cross_attention_bias_value: int = field(
-        default=1,
-        metadata={"help": "Value used to bias cross attention. Default = 1, i.e. no bias. "
-            "A bias of 0 acts similarly to setting a custom attention mask for the cross attention."}
-    )
-
-    context_augmentation_examples: str = field(
-        default=None,
-        metadata={"help": "source for context examples if using context augmentation as described by Hazarika et al., 2021. "
-        "If a file path is provided, example sentences are expected to be one per line"}
-    )
-
-    max_context_examples: int = field(
-        default=10,
-        metadata={"help": "number of context examples to use for context augmentation"}
-    )
-
-    context_code_attention_bias_value: int = field(
-        default=1,
-        metadata={"help": "Value used to bias cross attention given context augmentation. Default = 1, i.e. no bias. "
-            "A bias of 0 acts similarly to setting a custom attention mask for the cross attention."}
-    )
-
-    bias_profile: str = field(
-        default='',
-        metadata={"help": "Where to apply the cross attention bias\n"
-            "'' means no cross attention bias (i.e. default)\n"
-            "`knowledge` means apply the bias to the knowledge bucket of the input (for use with KGD).\n"
-            "`positional` means apply the bias to the position-specific tokens\n"
-            }
-    )
-
-    cross_attention_positions: str = field(
-        default=None,
-        metadata={"help": "Start and end positions of the cross attention biad value."}
-    )
-
-    write_to_file: str = field(
-        default='auto',
-        metadata={"help": "Output file for generated text or `auto` to generate outfile name based on generation parameters"}
-    )
-
-    verbose: bool = field(
-        default=False,
-        metadata={"help": "Print progress"}
-    )
-
-    debug: bool = field(
-        default=False,
-        metadata={"help": "Print debug information"}
-    )
 
 class InferenceModel:
 
     def __init__(self, args):
         parser = HfArgumentParser((InferenceArguments, ModelArguments, DataTrainingArguments))
-        if len(args) == 2 and args[1].endswith(".json"):
-            # If we pass only one argument to the script and it's the path to a json file,
-            # let's parse it to get our arguments.
+        if len(args) == 2 and args[1].endswith(".json"): # allow for passing args as json file
             self.gen_args, self.model_args, self.data_args = parser.parse_json_file(json_file=os.path.abspath(args[1]))
         elif isinstance(args, dict):
             self.gen_args, self.model_args, self.data_args = parser.parse_dict(args)
@@ -194,12 +50,12 @@ class InferenceModel:
             print({**self.gen_args.__dict__, **self.model_args.__dict__, **self.data_args.__dict__})
             print('*'*25)
             print()
-        # # loading the model you previously trained
+        
+        # loading the model you previously trained
         self.model_path = self.model_args.model_name_or_path
         if self.gen_args.checkpoint_dir is not None:
             self.model_path = str(Path(self.model_args.model_name_or_path) / self.gen_args.checkpoint_dir)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_path)
-        # self.model = EncoderDecoderModel.from_encoder_decoder_pretrained(self.model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
 
         self.model = self.model.eval()
@@ -212,9 +68,9 @@ class InferenceModel:
         torch.manual_seed(self.gen_args.seed) 
 
     def load_test_set_for_generation(self, dataset: Optional[str] = None):
-        ######################################################################
-        ## Load test dataset and run pre-processing (e.g. tokenization as required for KDG model)
-
+        """
+        Load TopcialChat KGD test dataset and run pre-processing (e.g. tokenization as required for KDG model)
+        """
         if dataset is not None:
             extension = dataset.split(".")[-1]
             dataset_dict = load_dataset(extension, data_files={'test': dataset})
@@ -234,7 +90,7 @@ class InferenceModel:
             predict_dataset = predict_dataset.select(range(max_predict_samples))
 
         predict_dataset = predict_dataset.map(
-            tokenize_function, # currently defined in train.py
+            prepare_topical_chat, # defined in data.py
             batched=True,
             num_proc=self.data_args.preprocessing_num_workers,
             load_from_cache_file=not self.data_args.overwrite_cache,
@@ -244,7 +100,6 @@ class InferenceModel:
                 **self.data_args.__dict__,
             },
         )
-        
         
         predict_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"], output_all_columns=True)
         

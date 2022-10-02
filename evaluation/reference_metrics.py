@@ -4,13 +4,17 @@
 import os
 import logging
 from typing import List, Dict
-
+import random
 import evaluate # https://huggingface.co/docs/evaluate/a_quick_tour
 
 try:
     from .tokenization import tokenize_texts
 except ImportError:
     from tokenization import tokenize_texts
+
+# set seed for reproducibility
+seed = 42
+random.seed(seed)
 
 # logging.basicConfig(level=logging.INFO)
 # logger = logging.getLogger(os.path.basename(__file__))
@@ -95,3 +99,17 @@ def compute_exact_match(
         ignore_punctuation=ignore_punctuation,
         ignore_numbers=ignore_numbers,
         )
+
+def compute_self_bleu(predictions: List[str], use_subset: int = 200, is_tokenized: bool = False, verbose: bool = False) -> Dict:
+    """
+    measures the similarity between each model prediction and all other predictions. 
+
+    :use_subset: if set to a positive integer, only a subset of the predictions will be used as 'references' to compute the self-BLEU score.
+    """
+    references = []
+    for i in range(len(predictions)):
+        cur_refs = predictions[:i] + predictions[i+1:]
+        assert len(cur_refs) == len(predictions) - 1
+        cur_refs = random.sample(cur_refs, min(use_subset, len(cur_refs)))
+        references.append(cur_refs)
+    return compute_bleu(predictions, references, is_tokenized=is_tokenized, verbose=verbose)

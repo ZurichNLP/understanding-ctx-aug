@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Metrics class.
+intra_dist = avg. sequence level distinctiveness (within a sequence)
+inter_dist = corpus level ngram distinctiveness (between sequences) (i.e. ngram variation in model outputs)
 """
 
 from typing import List
