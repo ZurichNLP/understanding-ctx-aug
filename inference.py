@@ -19,7 +19,7 @@ from transformers import (
     set_seed,
 )
 
-from data import prepare_topical_chat
+from data import preprocess_topical_chat_dataset
 from hf_args import InferenceArguments, DataTrainingArguments, ModelArguments
 
 # Setup logging
@@ -90,7 +90,7 @@ class InferenceModel:
             predict_dataset = predict_dataset.select(range(max_predict_samples))
 
         predict_dataset = predict_dataset.map(
-            prepare_topical_chat, # defined in data.py
+            preprocess_topical_chat_dataset, # defined in data.py
             batched=True,
             num_proc=self.data_args.preprocessing_num_workers,
             load_from_cache_file=not self.data_args.overwrite_cache,

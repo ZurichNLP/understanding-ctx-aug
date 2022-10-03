@@ -105,13 +105,17 @@ def print_args(args: Dict):
 if __name__ == "__main__":
     args = set_args()
     
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{args.exp_id}.csv'
-    print(f'Writing generation run results to {outfile}')
-    if outfile.exists() and not args.debug:
-        print(f'[!] Overwriting {outfile}')
+    if not args.debug:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+        outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{args.exp_id}.csv'
+        print(f'Writing generation run results to {outfile}')
+        if outfile.exists():
+            print(f'[!] Overwriting {outfile}')
 
+    # fetch checkpoint with the lowest step number
     checkpoint = get_best_checkpoint(args.model_dir)
+    
+    # set generation args
     gen_args = {
         "model_name_or_path": args.model_dir,
         "checkpoint_dir": checkpoint,
@@ -155,12 +159,10 @@ if __name__ == "__main__":
         
             df = pd.DataFrame(results)    
             df.to_csv(outfile, index=False)
+            print(f'Finished generation runs. Results saved to {outfile}')
         else:
             for i, o in enumerate(outputs):
                 print(f'{i}: {o}')
-    
-    print(f'Finished generation runs. Results saved to {outfile}')
-        
 
 
 
