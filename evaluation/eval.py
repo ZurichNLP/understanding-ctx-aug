@@ -114,6 +114,9 @@ def compute_reference_free_metrics(
     dist = distinct_n(tokenize_texts(sys_outputs)) # returns dict
     result.update(dist)
 
+    self_bleu = compute_self_bleu(sys_outputs, use_subset=200, is_tokenized=False, verbose=verbose)
+    result['self_bleu'] = self_bleu['score']
+
     return result
 
 def compute_reference_based_metrics(
@@ -146,11 +149,6 @@ def compute_reference_based_metrics(
         verbose=verbose
         )
     
-    if tag == 'target': # we only compute self-bleu for once since the references are the same for all tags
-        self_bleu = compute_self_bleu(sys_outputs, use_subset=200, is_tokenized=is_tokenized, verbose=verbose)
-    else:
-        self_bleu = None
-
     novelty = compute_novelty(sys_outputs, references, is_tokenized=is_tokenized, ignore_case=True, N=4, verbose=verbose)
 
     if tag:
@@ -162,7 +160,6 @@ def compute_reference_based_metrics(
     result[f'rougeL{tag}'] = rouge['rougeL'] if rouge is not None else None
     result[f'meteor{tag}'] = meteor['meteor'] if meteor is not None else None
     result[f'exact{tag}'] = exact['exact_match'] if exact is not None else None
-    result[f'self_bleu{tag}'] = self_bleu['score'] if self_bleu is not None else None
     result[f'novelty{tag}_1gram'] = novelty.get('1_gram') if novelty is not None else None
     result[f'novelty{tag}_2gram'] = novelty.get('2_gram') if novelty is not None else None
     result[f'novelty{tag}_3gram'] = novelty.get('3_gram') if novelty is not None else None

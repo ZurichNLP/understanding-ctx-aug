@@ -34,7 +34,7 @@ def compute_rouge(predictions: List[str], references: List[str], is_tokenized: b
     if verbose:
         # logger.info(f'Computing ROUGE with {len(predictions)} predictions and {len(references)} references...')
         print(f'Computing ROUGE with {len(predictions)} predictions and {len(references)} references...')
-        
+    
     if not is_tokenized:
         try:
             predictions = tokenize_texts(predictions)
@@ -60,7 +60,7 @@ def compute_bleu(predictions: List[str], references: List[str], is_tokenized: bo
     
     # sacrebleu applies tokenization to the predictions and references separately, 
     # but can override this behavior by passing setting force=True
-    return bleu.compute(predictions=predictions, references=references, force=is_tokenized)
+    return bleu.compute(predictions=predictions, references=references, tokenize='13a', force=is_tokenized)
 
 def compute_meteor(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
