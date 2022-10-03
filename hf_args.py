@@ -289,6 +289,13 @@ class DataTrainingArguments:
         },
     )
 
+    write_intermediate_eval_results: bool = field(
+        default=False,
+        metadata={
+            "help": "whether or not to write intermediate eval results to disk. If True, will save results to json files in the output_dir"
+        },
+    )
+
     def __post_init__(self):
         if self.dataset_name is None and self.train_file is None and self.validation_file is None and self.test_file is None:
             raise ValueError("Need either a dataset name or a training/validation file.")

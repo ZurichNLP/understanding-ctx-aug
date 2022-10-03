@@ -3,10 +3,13 @@
 
 """
 Fine-tuning the library models for sequence to sequence.
+
+Adapted from the examples scripts in HuggingFace's transformers library.
 """
 
 import logging
 import os
+import json
 import sys
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Callable
@@ -182,11 +185,11 @@ def postprocess_text(texts: List[str]) -> List[str]:
     texts = ["\n".join(nltk.sent_tokenize(text.strip())) for text in texts]
     return texts
 
-def make_compute_metrics(data_args, tokenizer: PreTrainedTokenizer, logger) -> Callable[[EvalPrediction], Dict]:
+def make_compute_metrics(model_args, data_args, training_args, tokenizer, logger) -> Callable[[EvalPrediction], Dict]:
     """
     wraps the custom compute_metrics function with the data_args and tokenizer as arguments (https://github.com/huggingface/transformers/issues/9264)
     """
-    def compute_metrics(eval_preds) -> Dict:
+    def compute_metrics(eval_preds, model_args=model_args, data_args=data_args, training_args=training_args, tokenizer=tokenizer, logger=logger) -> Dict:
         """
         Scores KGD with evaluation functions in evalutate/eval.py. 
         Note, this computes a number of metrics, so can be slow...
@@ -212,25 +215,29 @@ def make_compute_metrics(data_args, tokenizer: PreTrainedTokenizer, logger) -> C
         
         result = score_kgd_generation(
             sys_outputs=decoded_preds, 
-            targets=[[l] for l in decoded_labels], 
-            sys_inputs=[[i] for i in decoded_labels]
+            targets=[[l] for l in decoded_labels], # expects references to be a list of list of strings
+            sys_inputs=[[i] for i in decoded_inputs] # expects references to be a list of list of strings
             )
-
-        # # rouge_target = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
-        # # bleu_target = bleu_metric.compute(predictions=decoded_preds, references=[[l] for l in decoded_labels])
         
-        # # Extract a few results from ROUGE
-        # rouge_result = {key: value.mid.fmeasure * 100 for key, value in rouge_result.items()}
-        # bleu_result = {key: value for key, value in bleu_result.items() if not isinstance(value, list)}
-        # result = {**rouge_result, **bleu_result}
-
         prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
         result["gen_len"] = np.mean(prediction_lens)
         result = {k: round(v, 4) for k, v in result.items() if v is not None}
-        # logger.info(f"Eval results: {result}")
+        
+        # save outputs in output_dir
+        if data_args.write_intermediate_eval_results:
+            i = len(list(Path(training_args.output_dir).glob('eval_predictions*')))
+            outfile = Path(training_args.output_dir) / f'eval_predictions.{i}.json'
+            with open(outfile, 'w', encoding='utf8') as outf:
+                json_entry = {
+                    'inputs': decoded_inputs,
+                    'labels': decoded_labels,
+                    'preds': decoded_preds,
+                    'metrics': result
+                }
+                outf.write(f'{json.dumps(json_entry)}\n')
+                logger.info(f'Wrote eval predictions and metrics to {outfile}')
 
-        return result 
-    
+        return result
     return compute_metrics
 
 def main():
@@ -336,7 +343,7 @@ def main():
             and threshold {data_args.early_stopping_threshold}")
     
     # setup compute metrics function which is passed to the Trainer
-    compute_metrics = make_compute_metrics(data_args, tokenizer, logger)
+    compute_metrics = make_compute_metrics(model_args, data_args, training_args, tokenizer, logger)
 
     # derive the number of valiation runs at equal intervals per epoch (added for experimentation)
     if data_args.eval_runs_per_epoch > 1:

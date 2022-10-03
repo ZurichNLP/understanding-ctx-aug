@@ -66,7 +66,7 @@ if [[ eval_runs_per_epoch -gt 1 ]]; then
         --do_train --do_eval --do_predict \
         --save_strategy "steps" --save_total_limit 1 \
         --evaluation_strategy "steps" --per_device_eval_batch_size 120 \
-        --eval_runs_per_epoch "$eval_runs_per_epoch" \
+        --eval_runs_per_epoch "$eval_runs_per_epoch" --write_intermediate_eval_results True \
         --include_inputs_for_metrics True \
         --early_stopping False \
         --predict_with_generate True \
@@ -105,7 +105,7 @@ else
         --do_train --do_eval --do_predict \
         --save_strategy "epoch" --save_total_limit 1 \
         --evaluation_strategy "epoch" --per_device_eval_batch_size 120 \
-        --eval_runs_per_epoch "$eval_runs_per_epoch" \
+        --eval_runs_per_epoch "$eval_runs_per_epoch" --write_intermediate_eval_results False \
         --include_inputs_for_metrics False \
         --early_stopping True \
         --predict_with_generate True \
