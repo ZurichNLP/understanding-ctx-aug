@@ -216,7 +216,7 @@ def make_compute_metrics(model_args, data_args, training_args, tokenizer, logger
         result = score_kgd_generation(
             sys_outputs=decoded_preds, 
             targets=[[l] for l in decoded_labels], # expects references to be a list of list of strings
-            sys_inputs=[[i] for i in decoded_inputs] # expects references to be a list of list of strings
+            sys_inputs=[[i] for i in decoded_inputs] if decoded_inputs is not None else None # expects references to be a list of list of strings
             )
         
         prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]

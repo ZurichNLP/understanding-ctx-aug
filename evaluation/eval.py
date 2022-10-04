@@ -238,18 +238,21 @@ def score_kgd_generation(
     validate_system_outputs(sys_outputs)
 
     result.update(compute_reference_free_metrics(sys_outputs, verbose=verbose))
-    
+    # targets as references (i.e. true references)
     if targets is not None:
         result.update(compute_reference_based_metrics(sys_outputs, targets, 'target', verbose))
+    # only knowledge snippets as references
     if knowledge_snippets is not None:
         result.update(compute_reference_based_metrics(sys_outputs, knowledge_snippets, 'knowledge', verbose))
+    # only dialogs as references
     if dialogs is not None:
         result.update(compute_reference_based_metrics(sys_outputs, dialogs, 'dialog', verbose))
-    if knowledge_snippets is not None and dialogs is not None:
-        combined_inputs = [[' '.join(knowledge_snippets[i] + dialogs[i])] for i in range(len(knowledge_snippets))]
-        result.update(compute_reference_based_metrics(sys_outputs, combined_inputs, 'source', verbose))
+    # source texts as references
     if sys_inputs is not None: # using model inputs as references
         result.update(compute_reference_based_metrics(sys_outputs, sys_inputs, 'source', verbose))
+    elif knowledge_snippets is not None and dialogs is not None:
+        combined_inputs = [[' '.join(knowledge_snippets[i] + dialogs[i])] for i in range(len(knowledge_snippets))]
+        result.update(compute_reference_based_metrics(sys_outputs, combined_inputs, 'source', verbose))
 
     end_time = time.time()
     

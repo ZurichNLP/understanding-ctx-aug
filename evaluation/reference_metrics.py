@@ -24,7 +24,7 @@ rouge = evaluate.load('rouge')
 meteor = evaluate.load('meteor')
 exact_match_metric = evaluate.load("exact_match")
 
-def compute_rouge(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
+def compute_rouge(predictions: List[str], references: List[List[str]], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
     https://huggingface.co/spaces/evaluate-metric/rouge
 
@@ -44,7 +44,7 @@ def compute_rouge(predictions: List[str], references: List[str], is_tokenized: b
 
     return rouge.compute(predictions=predictions, references=references)
 
-def compute_bleu(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
+def compute_bleu(predictions: List[str], references: List[List[str]], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
     https://huggingface.co/spaces/evaluate-metric/sacrebleu
     
@@ -62,7 +62,7 @@ def compute_bleu(predictions: List[str], references: List[str], is_tokenized: bo
     # but can override this behavior by passing setting force=True
     return bleu.compute(predictions=predictions, references=references, tokenize='13a', force=is_tokenized)
 
-def compute_meteor(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
+def compute_meteor(predictions: List[str], references: List[List[str]], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
     https://huggingface.co/spaces/evaluate-metric/meteor
 
