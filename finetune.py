@@ -349,8 +349,10 @@ def main():
     if data_args.eval_runs_per_epoch > 1:
         steps_per_epoch = len(train_dataset) // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)
         training_args.eval_steps = steps_per_epoch // data_args.eval_runs_per_epoch
-        logger.info(f"Updated `eval_steps` to {training_args.eval_steps} for {data_args.eval_runs_per_epoch} runs per epoch. \
-            Validation set has {len(eval_dataset)} samples with batch size {training_args.per_device_eval_batch_size}.")
+        training_args.save_steps = training_args.eval_steps
+        logger.info(f"Requested {data_args.eval_runs_per_epoch} evaluation runs per epoch. Note, validation set has {len(eval_dataset)} samples with batch size {training_args.per_device_eval_batch_size}.")
+        logger.info(f"Updated `eval_steps` to {training_args.eval_steps}")
+        logger.info(f"Updated `save_steps` to {training_args.save_steps}")
 
     # Initialize Trainer
     trainer = Seq2SeqTrainer(

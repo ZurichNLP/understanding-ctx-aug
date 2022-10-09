@@ -64,14 +64,14 @@ if [[ eval_runs_per_epoch -gt 1 ]]; then
         --seed "$seed" \
         --fp16 \
         --do_train --do_eval --do_predict \
-        --save_strategy "steps" --save_total_limit 1 \
+        --save_strategy "steps" \
         --evaluation_strategy "steps" --per_device_eval_batch_size 120 \
         --eval_runs_per_epoch "$eval_runs_per_epoch" --write_intermediate_eval_results True \
         --include_inputs_for_metrics True \
         --early_stopping False \
-        --predict_with_generate True \
+        --predict_with_generate False \
         --max_train_samples "$max_train_samples" \
-        --load_best_model_at_end False --metric_for_best_model "loss" \
+        --load_best_model_at_end True --metric_for_best_model "loss" \
         --report_to "wandb" | tee "$log_file"
 
 else
@@ -103,12 +103,12 @@ else
         --seed "$seed" \
         --fp16 \
         --do_train --do_eval --do_predict \
-        --save_strategy "epoch" --save_total_limit 1 \
+        --save_strategy "epoch" \
         --evaluation_strategy "epoch" --per_device_eval_batch_size 120 \
         --eval_runs_per_epoch "$eval_runs_per_epoch" --write_intermediate_eval_results False \
         --include_inputs_for_metrics False \
         --early_stopping True \
-        --predict_with_generate True \
+        --predict_with_generate False \
         --max_train_samples "$max_train_samples" \
         --load_best_model_at_end True --metric_for_best_model "loss" \
         --report_to "wandb" | tee "$log_file"

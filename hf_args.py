@@ -285,7 +285,7 @@ class DataTrainingArguments:
     eval_runs_per_epoch: Optional[int] = field(
         default=1,
         metadata={
-            "help": "number of eval runs to perform per epoch (for experimental purposes)"
+            "help": "number of eval runs to perform per epoch (for experimental purposes). Note, this will override the `eval_steps` and `save_steps` argument."
         },
     )
 

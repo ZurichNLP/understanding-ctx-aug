@@ -6,6 +6,7 @@ import argparse
 from typing import List, Dict, Optional, Union
 from pathlib import Path
 import pandas as pd
+import json
 
 from inference import InferenceModel
 from evaluation.eval import score_kgd_generation
@@ -13,11 +14,15 @@ from evaluation.eval import score_kgd_generation
 def set_args():
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("-m", "--model_dir", type=str, required=True, help="path to the finetuned model folder")
-    ap.add_argument("-o", "--output_dir", type=str, default='results', required=False, help="path to the output directory for result csvs")
-    ap.add_argument("-g", "--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation results")
-    ap.add_argument("-d", "--debug", action="store_true", help="")
+    ap.add_argument("-m", "--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
+    ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if none, the best (lowest) checkpoint is used")
+    ap.add_argument("--dataset", type=str, required=True, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
+    ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
+    ap.add_argument("-o", "--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
+    ap.add_argument("-g", "--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
+    ap.add_argument("--debug", action="store_true", help="")
     ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
+    ap.add_argument("--data_seed", type=int, default=0, help="random seed for the dataset split. We keep this fixed for all seeds to ensure that the same samples are used for all seeds")
     ap.add_argument("-b", "--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
     ap.add_argument(
         "--exp_id", 
@@ -39,14 +44,18 @@ def set_args():
 
 def get_best_checkpoint(model_dir):
     """
-    returns the checkpoint directory name with the lowest step number
+    returns the best checkpoint directory name
+    # NOTE: this assumes that the trainer_state.json file is present in the model_dir
     """
-    checkpoints = sorted(list(Path(model_dir).glob('checkpoint-*')))
-    return checkpoints[0].stem
+    trainer_state = Path(model_dir) / 'trainer_state.json'
+    with open(trainer_state, 'r') as f:
+        trainer_state = json.load(f)
+    best_checkpoint = Path(trainer_state['best_model_checkpoint']).name
+    print(f'best checkpoint: {best_checkpoint}')
+    return best_checkpoint
 
 
 topical_chat_data_config = {
-    "test_file": "resources/data/Topical-Chat/KGD/test_freq.json",
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "knowledge",
@@ -84,11 +93,11 @@ experiment_configs = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
-    "tagged_qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions_tagged.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
+    # "tagged_qu_ctxt_aug5": {
+    #     "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions_tagged.txt",
+    #     "context_code_attention_bias_value": 5,
+    #     "max_context_examples": 10,
+    # },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
@@ -105,31 +114,36 @@ def print_args(args: Dict):
 if __name__ == "__main__":
     args = set_args()
     
+    checkpoint = get_best_checkpoint(args.model_dir) if args.checkpoint is None else args.checkpoint # fetch checkpoint with the lowest step number if not provided
+    
     if not args.debug:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-        outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{args.exp_id}.csv'
+        outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{checkpoint.replace("-", "_")}-{args.exp_id}.csv'
         print(f'Writing generation run results to {outfile}')
         if outfile.exists():
             print(f'[!] Overwriting {outfile}')
-
-    # fetch checkpoint with the lowest step number
-    checkpoint = get_best_checkpoint(args.model_dir)
     
     # set generation args
     gen_args = {
         "model_name_or_path": args.model_dir,
         "checkpoint_dir": checkpoint,
         "batch_size": args.batch_size,
+        "test_file": args.dataset, # add dataset passed as argument
+        "data_seed": args.data_seed,
+        "max_predict_samples": args.max_predict_samples,
+        "output_dir": args.generation_dir,
         }
+
     gen_args.update(topical_chat_data_config)
+    
     gen_args.update(baseline_config)
+    
     for exp_id in args.exp_id.split('+'):
         gen_args.update(experiment_configs.get(exp_id, {}))
+    
     if args.debug:
         gen_args.update(debug_config)
-    if args.generation_dir:
-        gen_args['output_dir'] = args.generation_dir
-
+    
     results = []
     for seed in args.seed:
         
