@@ -86,6 +86,12 @@ class InferenceModel:
         predict_dataset = dataset_dict['test']
 
         if self.data_args.max_predict_samples is not None:
+            self.data_args.max_predict_samples = (
+                int(len(predict_dataset) * self.data_args.max_predict_samples) 
+                if self.data_args.max_predict_samples <= 1.0 
+                else int(self.data_args.max_predict_samples)
+            )
+            logger.info(f"Using {self.data_args.max_predict_samples} samples for testing!") 
             max_predict_samples = min(len(predict_dataset), self.data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
 
@@ -226,7 +232,7 @@ class InferenceModel:
 
         if self.gen_args.write_to_file == 'auto':
             outfile = 'generations'
-            outfile += f'{Path(self.data_args.test_file).stem}'
+            outfile += f'_{Path(self.data_args.test_file).stem}'
             outfile += f'_seed={self.gen_args.seed}'
             outfile += f'_ml={self.gen_args.max_length}'
             outfile += f'_lp={self.gen_args.length_penalty}'
