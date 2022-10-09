@@ -49,10 +49,14 @@ def get_best_checkpoint(model_dir):
     """
     trainer_state = Path(model_dir) / 'trainer_state.json'
     with open(trainer_state, 'r') as f:
-        trainer_state = json.load(f)
-    best_checkpoint = Path(trainer_state['best_model_checkpoint']).name
-    print(f'best checkpoint: {best_checkpoint}')
-    return best_checkpoint
+        trainer_state = json.load(f)    
+    
+    best_checkpoint = trainer_state['best_model_checkpoint']
+    if best_checkpoint is not None:
+        return Path(best_checkpoint).name # return the checkpoint directory name from the path
+    else: # assume that the best checkpoint is the earliest checkpoint with save_total_limit = 1
+        checkpoints = sorted(list(Path(model_dir).glob('checkpoint-*')))
+        return checkpoints[0].stem
 
 
 topical_chat_data_config = {
