@@ -176,7 +176,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
     """
     Adapted from run_summarization.py
     """
-    train_dataset, eval_dataset, test_dataset = None, None, None
+    train_dataset, eval_dataset, predict_dataset = None, None, None
     
     raw_datasets = load_data(model_args, data_args, training_args)
     
@@ -190,7 +190,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
         column_names = raw_datasets["test"].column_names
     else:
         logger.info("There is nothing to do. Please pass `do_train`, `do_eval` and/or `do_predict`.")
-        return train_dataset, eval_dataset, test_dataset
+        return train_dataset, eval_dataset, predict_dataset
 
     # Get the column names for input/target.
     dataset_columns = None

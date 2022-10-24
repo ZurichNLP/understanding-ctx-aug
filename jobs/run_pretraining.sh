@@ -75,6 +75,10 @@ while [[ $# -gt 0 ]]; do
             DENOISING_METHOD="$2"
             shift 2 # past argument
             ;;
+        --heads_prob)
+            HEADS_PROB="$2"
+            shift 2 # past argument
+            ;;
         -*|--*)
             echo "Unknown option $1" && exit 1
             ;;
@@ -159,6 +163,13 @@ if [[ -z $DENOISING_METHOD ]]; then
     echo "No denoising method specified. The default BART implementation will be used."
 fi
 
+if [[ -z $HEADS_PROB ]]; then
+    if [[ $DENOISING_METHOD == "bart5" ]]; then
+        print_missing_arg "[--heads_prob]" "heads prob is required for BART5 pretraining" && exit 1
+    fi
+    HEADS_PROB=0.5 # default value
+fi
+
 # cd to base dir
 cd "$BASE" && echo $(pwd) || exit 1
 
@@ -185,4 +196,5 @@ bash pretraining/pretrain_bart_fairseq.sh \
     --insert "$INSERT" \
     --poisson_lambda "$POISSON_LAMBDA" \
     --mask "$MASK" \
-    --denoising_method "$DENOISING_METHOD"
+    --denoising_method "$DENOISING_METHOD" \
+    --heads_prob "$HEADS_PROB"

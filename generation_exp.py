@@ -14,20 +14,17 @@ from evaluation.eval import score_kgd_generation
 def set_args():
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("-m", "--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
-    ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if none, the best (lowest) checkpoint is used")
-    ap.add_argument("--dataset", type=str, required=True, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
+    ap.add_argument("--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
+    ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if required")
+    ap.add_argument("--dataset", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
-    ap.add_argument("-o", "--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
-    ap.add_argument("-g", "--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
-    ap.add_argument("--debug", action="store_true", help="")
-    ap.add_argument("-s", "--seed", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use")
+    ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
+    ap.add_argument("--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
+    ap.add_argument("--seeds", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use for generation")
     ap.add_argument("--data_seed", type=int, default=0, help="random seed for the dataset split. We keep this fixed for all seeds to ensure that the same samples are used for all seeds")
-    ap.add_argument("-b", "--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
-    ap.add_argument(
-        "--exp_id", 
-        required=False, 
-        default='baseline', 
+    ap.add_argument("--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
+    ap.add_argument("--greedy", action="store_true", help="whether or not to use greedy decoding")
+    ap.add_argument("--exp_id", required=False, default='baseline', 
         choices=[
             "baseline",
             "xa_knowledge",
@@ -39,7 +36,9 @@ def set_args():
             "tagged_qu_ctxt_aug5", # for debugging
         ],
         help="experiment id"
-        )
+    )
+    ap.add_argument("--debug", action="store_true", help="set for test runs")
+
     return ap.parse_args()
 
 def get_best_checkpoint(model_dir):
@@ -72,6 +71,19 @@ baseline_config = {
     "top_k": 0,
     "temperature": 0.7,
     "beam_size": 4,
+    "num_return_sequences": 1,
+    "write_to_file": "auto",
+    "context_augmentation_examples": None, # included to unify results csvs across experiments
+    "context_code_attention_bias_value": 1,
+    "max_context_examples": 0,
+    "cross_attention_bias_value": 1,
+    "bias_profile": None,
+}
+
+greedy_config = {
+    "max_length": 40,
+    "do_sample": False,
+    "beam_size": 1,
     "num_return_sequences": 1,
     "write_to_file": "auto",
 }
@@ -118,8 +130,8 @@ def print_args(args: Dict):
 if __name__ == "__main__":
     args = set_args()
     
-    checkpoint = get_best_checkpoint(args.model_dir) if args.checkpoint is None else args.checkpoint # fetch checkpoint with the lowest step number if not provided
-    
+    checkpoint = args.checkpoint if args.checkpoint is not None else 'best'
+
     if not args.debug:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
         outfile = Path(args.output_dir) / f'{Path(args.model_dir).name}-{checkpoint.replace("-", "_")}-{args.exp_id}.csv'
@@ -130,7 +142,7 @@ if __name__ == "__main__":
     # set generation args
     gen_args = {
         "model_name_or_path": args.model_dir,
-        "checkpoint_dir": checkpoint,
+        "checkpoint_dir": args.checkpoint,
         "batch_size": args.batch_size,
         "test_file": args.dataset, # add dataset passed as argument
         "data_seed": args.data_seed,
@@ -138,19 +150,28 @@ if __name__ == "__main__":
         "output_dir": args.generation_dir,
         }
 
+    # dataset-specific args
     gen_args.update(topical_chat_data_config)
     
-    gen_args.update(baseline_config)
+    # decoding args
+    if args.greedy:
+        gen_args.update(greedy_config)        
+    else:
+        gen_args.update(baseline_config)
     
+    # experiment-specific args
     for exp_id in args.exp_id.split('+'):
         gen_args.update(experiment_configs.get(exp_id, {}))
     
+    # debug args for test runs
     if args.debug:
         gen_args.update(debug_config)
     
     results = []
-    for seed in args.seed:
-        
+    for seed in args.seeds:
+
+        print('\n***')
+        print(f'Running generation with seed {seed}')
         gen_args['seed'] = seed
 
         # to execute seperate processes from the command line, uncomment this        
@@ -175,8 +196,11 @@ if __name__ == "__main__":
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)
         
-            df = pd.DataFrame(results)    
+            df = pd.DataFrame(results)
+            print(f'Results has {len(results)} keys for {len(df)} items')
+            print(f'\t{results}')
             df.to_csv(outfile, index=False)
+            
             print(f'Finished generation runs. Results saved to {outfile}')
         else:
             for i, o in enumerate(outputs):

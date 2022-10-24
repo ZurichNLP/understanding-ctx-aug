@@ -136,6 +136,7 @@ echo "MODEL_CONFIG: $MODEL_CONFIG" | tee -a "$LOG_DIR/MAIN"
 echo "TASK: $TASK" | tee -a "$LOG_DIR/MAIN"
 echo "MODEL_ID: $MODEL_ID" | tee -a "$LOG_DIR/MAIN"
 echo "DENOISING_METHOD: $DENOISING_METHOD" | tee -a "$LOG_DIR/MAIN"
+echo "HEADS_PROB: $HEADS_PROB" | tee -a "$LOG_DIR/MAIN"
 echo "DENOISING_ARGS: $DENOISING_ARGS" | tee -a "$LOG_DIR/MAIN"
 echo "DENOISING_ID: $DENOISING_ID" | tee -a "$LOG_DIR/MAIN"
 echo "PRETRAIN_SAVE_DIR: $PRETRAIN_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
@@ -163,7 +164,8 @@ id_pretrain=$(
     --insert "$INSERT" \
     --poisson_lambda "$POISSON_LAMBDA" \
     --mask "$MASK" \
-    --denoising_method "$DENOISING_METHOD"
+    --denoising_method "$DENOISING_METHOD" \
+    --heads_prob "$HEADS_PROB"
     )
 
 echo "  id_pretrain: $id_pretrain | $LOG_DIR/$id_pretrain.out" | tee -a "$LOG_DIR/MAIN"

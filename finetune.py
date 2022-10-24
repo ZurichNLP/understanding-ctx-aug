@@ -345,6 +345,11 @@ def main():
     # setup compute metrics function which is passed to the Trainer
     compute_metrics = make_compute_metrics(model_args, data_args, training_args, tokenizer, logger)
 
+    if data_args.write_intermediate_eval_results and not training_args.predict_with_generate:
+        logger.warning(
+            "You are using `write_intermediate_eval_results` but `predict_with_generate` is not set. Computing metrics will be skipped."
+        )
+
     # derive the number of valiation runs at equal intervals per epoch (added for experimentation)
     if data_args.eval_runs_per_epoch > 1:
         steps_per_epoch = len(train_dataset) // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)

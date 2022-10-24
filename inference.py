@@ -173,7 +173,7 @@ class InferenceModel:
             context_examples = self.load_context_examples(
                 self.gen_args.context_augmentation_examples, 
                 self.gen_args.max_context_examples, 
-                self.gen_args.seed
+                self.gen_args.data_seed
                 )
 
         context_code = self.encode_context(context_examples) if context_examples else None
@@ -243,7 +243,7 @@ class InferenceModel:
             outfile += f'_tk={self.gen_args.top_k}'
             outfile += f'_tp={self.gen_args.top_p}'
             if self.gen_args.cross_attention_bias_value != 1: # default value = baseline
-                outfile += f'_xatt={self.gen_args.cross_attention_bias_value}-{self.gen_args.bias_profile}'
+                outfile += f'_xatt={self.gen_args.cross_attention_bias_value}-{str(self.gen_args.bias_profile).lower()}'
             if self.gen_args.context_augmentation_examples: # default no context augmentation = baseline
                 outfile += f'_ctxt={self.gen_args.context_code_attention_bias_value}-{Path(self.gen_args.context_augmentation_examples).stem}-{self.gen_args.max_context_examples}'
             outfile += '.txt'
@@ -261,7 +261,7 @@ class InferenceModel:
         """
         
         if Path(outfile).exists():
-            logger.info(f"Output file {outfile} already exists. It will be overwritten.")
+            logger.warning(f"Overwriting existing {outfile}")
         else:
             Path(outfile).parent.mkdir(parents=True, exist_ok=True)
 

@@ -83,7 +83,7 @@ case $HF_MODEL_NAME in
         MODEL_ID="t5_small"
         ;;
     "google/t5-small-lm-adapt")
-        MODEL_ID="t5_small_lm"
+        MODEL_ID="t5_lm_small"
         ;;
     "facebook/bart-base")
         MODEL_ID="bart_base"
@@ -96,7 +96,7 @@ esac
 
 LOG_DIR="$SAVE_DIR_PREFIX/seed_$SEED/logs/$MODEL_ID"
 FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/${MODEL_ID}"
-RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results"
+RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results_topchat_kgd_test_freq"
 
 echo "$LOG_DIR"
 echo "$FINETUNE_SAVE_DIR"
@@ -134,7 +134,7 @@ id_finetune=$(
     $SLURM_ARGS_VOLTA \
     $SLURM_LOG_ARGS \
     $BASE/jobs/run_finetuning.sh \
-    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED" --is_encoder_decoder True --tie_encoder_decoder True
+    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED"
 )
 
 echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DIR/MAIN"

@@ -4,6 +4,9 @@
 # this training command is adapted from the original provided by M. Lewis
 # https://github.com/facebookresearch/fairseq/issues/1899#issuecomment-1069429320
 
+# default values
+HEADS_PROB="None"
+
 # argument parser
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -59,6 +62,10 @@ while [[ $# -gt 0 ]]; do
             DENOISING_METHOD="$2"
             shift 2 # past argument
             ;;
+        --heads_prob)
+            HEADS_PROB="$2"
+            shift 2 # past argument
+            ;;
         -*|--*)
             echo "Unknown option $1" && exit 1
             ;;
@@ -76,6 +83,7 @@ echo -e "$DATA_DIR"
 echo -e "arch:\t\t$MODEL_CONFIG"
 echo -e "task:\t\t\t$TASK"
 echo -e "denoising_method:\t$DENOISING_METHOD"
+echo -e "heads_prob:\t\t$HEADS_PROB"
 echo -e "seed:\t\t\t$SEED"
 echo -e "replace-length:\t\t$REPLACE_LENGTH"
 echo -e "mask-random:\t\t$MASK_RANDOM"
@@ -129,6 +137,7 @@ fairseq-train "$DATA_DIR" \
     --insert "$INSERT"`# insert this percentage of additional random tokens` \
     --poisson-lambda "$POISSON_LAMBDA" `# defined in paper as lambda=3` \
     --mask "$MASK" `# portion of words/subwords that will be masked` \
-    --denoising-method "$DENOISING_METHOD" `# ["default", "bart", "t5", "mass"]`
+    --denoising-method "$DENOISING_METHOD" `# ["default", "bart", "t5", "mass"]` \
+    --heads-prob "$HEADS_PROB" `# probability of using BART or T5 style denosing (only required for BART5 denoising method)` \
 
 echo "$SAVE_DIR"

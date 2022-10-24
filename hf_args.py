@@ -442,6 +442,11 @@ class InferenceArguments:
         metadata={"help": "Print progress"}
     )
 
+    data_seed: int = field(
+        default=42,
+        metadata={"help": "random seed for data loading"}
+    )
+
     debug: bool = field(
         default=False,
         metadata={"help": "Print debug information"}

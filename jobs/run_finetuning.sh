@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=12:00:00
+#SBATCH --time=6:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
@@ -19,7 +19,7 @@ SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False
 MAX_TRAIN_SAMPLES=1.0
-EVAL_RUNS_PER_EPOCH=1
+EVAL_RUNS_PER_EPOCH=3
 
 # arguments that are not supported
 print_usage() {
