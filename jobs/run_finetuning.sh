@@ -20,6 +20,7 @@ IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False
 MAX_TRAIN_SAMPLES=1.0
 EVAL_RUNS_PER_EPOCH=3
+INIT_AS_RANDOM=False
 
 # arguments that are not supported
 print_usage() {
@@ -69,6 +70,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --eval_runs_per_epoch)
             EVAL_RUNS_PER_EPOCH="$2"
+            shift 2
+            ;;
+        --init_as_random)
+            INIT_AS_RANDOM="$2"
             shift 2
             ;;
         -*|--*)
@@ -122,4 +127,5 @@ bash finetune.sh \
     "$IS_ENCODER_DECODER" \
     "$TIE_ENCODER_DECODER" \
     "$MAX_TRAIN_SAMPLES" \
-    "$EVAL_RUNS_PER_EPOCH"
+    "$EVAL_RUNS_PER_EPOCH" \
+    "$INIT_AS_RANDOM"

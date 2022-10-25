@@ -71,6 +71,10 @@ class ModelArguments:
         metadata={"help": "to create a shared encoder-decoder model, set this to True"}
     )
 
+    init_as_random: bool = field(
+        default=False,
+        metadata={"help": "Initialize model with random weights to train from scratch, instead of loading from pre-trained checkpoint"}
+    )
 
 @dataclass
 class DataTrainingArguments:

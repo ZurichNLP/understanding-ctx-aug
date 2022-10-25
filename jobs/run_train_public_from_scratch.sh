@@ -4,7 +4,7 @@
 # Job script to train a public model (e.g. BART-base) from scratch on the Topical-Chat dataset and evaluate it on the test set.
 
 # example usage:
-# . jobs/run_public.sh -s 23 -m t5-small -f 1
+# . jobs/run_train_public_from_scratch.sh -s 23 -c facebook/bart-base -f 1
 
 BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
 FORCE=0 # whether to overwrite existing files
@@ -82,13 +82,13 @@ SLURM_ARGS_VOLTA_LARGE="--qos=vesta --time=12:00:00 --gres gpu:Tesla-V100-32GB:1
 
 case $HF_MODEL_NAME in
     "t5-small")
-        MODEL_ID="t5_small"
+        MODEL_ID="t5_small_rndm"
         ;;
     "google/t5-small-lm-adapt")
-        MODEL_ID="t5_lm_small"
+        MODEL_ID="t5_lm_small_rndm"
         ;;
     "facebook/bart-base")
-        MODEL_ID="bart_base"
+        MODEL_ID="bart_base_rndm"
         ;;
     *)
         echo -n "unknown model name: $HF_MODEL_NAME" && exit 1
@@ -97,7 +97,7 @@ esac
 
 
 LOG_DIR="$SAVE_DIR_PREFIX/seed_$SEED/logs/$MODEL_ID"
-FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/$MODEL_ID"
+FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/${MODEL_ID}"
 RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results_topchat_kgd_test_freq"
 
 echo "$LOG_DIR"
@@ -136,7 +136,7 @@ id_finetune=$(
     $SLURM_ARGS_VOLTA \
     $SLURM_LOG_ARGS \
     $BASE/jobs/run_finetuning.sh \
-    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED"
+    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED" --init_as_random True
 )
 
 echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DIR/MAIN"

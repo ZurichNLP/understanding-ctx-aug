@@ -4,7 +4,7 @@
 ##################################################################################################
 # Example usage:
 
-    # bash finetune.sh model_name_or_path save_dir seed [is_encoder_decoder] [tie_encoder_decoder]
+    # bash finetune.sh model_name_or_path save_dir seed [optional args (see below)]
 ##################################################################################################
 
 model_name_or_path=$1
@@ -14,6 +14,7 @@ is_encoder_decoder=${4:-False}
 tie_encoder_decoder=${5:-False}
 max_train_samples=${6:-1.0}
 eval_runs_per_epoch=${7:-3}
+init_as_random=${8:-False}
 data_dir="resources/data/Topical-Chat/KGD"
 log_file="$save_dir/finetune.log"
 
@@ -34,6 +35,7 @@ echo -e "is_encoder_decoder:\t$is_encoder_decoder"
 echo -e "tie_encoder_decoder:\t$tie_encoder_decoder"
 echo -e "max_train_samples:\t$max_train_samples"
 echo -e "eval_runs_per_epoch:\t$eval_runs_per_epoch"
+echo -e "init_as_random:\t\t$init_as_random"
 echo ""
 
 python finetune.py \
@@ -66,6 +68,7 @@ python finetune.py \
     --early_stopping False \
     --max_train_samples "$max_train_samples" \
     --load_best_model_at_end True --metric_for_best_model "loss" \
+    --init_as_random "$init_as_random" \
     --report_to "wandb" | tee "$log_file"
 
 # else
