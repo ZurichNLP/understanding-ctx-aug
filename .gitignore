@@ -130,7 +130,10 @@ dmypy.json
 
 data/
 s3it/
+helper_scripts/
+exp_configs/dummy/
 scratch/
+sentiment/
 models
 src/
 wandb/
