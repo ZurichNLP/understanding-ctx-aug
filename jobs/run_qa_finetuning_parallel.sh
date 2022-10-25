@@ -52,6 +52,10 @@ while [[ $# -gt 0 ]]; do
             DATASET="$2"
             shift 2
             ;;
+        -e|--enc_only)
+            ENC_ONLY="$2"
+            shift 2
+            ;;
         -*|--*)
             echo "Unknown option $1" && print_usage && exit 1
             ;;
@@ -78,6 +82,10 @@ if [[ -z $DATASET ]]; then
     exit 1
 fi
 
+if [[ -z $ENC_ONLY ]]; then
+    print_missing_arg "[-e enc_only]" "..."
+fi
+
 # cd to base dir
 cd "$BASE" && echo $(pwd) || exit 1
 
@@ -91,9 +99,16 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
+if [[ "$ENC_ONLY" == "True" ]]; then
+    MODEL_TYPE="enc"
+else
+    MODEL_TYPE="enc_dec"
+fi
+    
 # launches a single experiment job for each exp_id in parallel
 srun bash finetune_qa.sh \
     "resources/models/seed_${SEEDS[$SLURM_ARRAY_TASK_ID]}/pt/hf_conv/$MODEL_ID" \
-    "resources/models/seed_${SEEDS[$SLURM_ARRAY_TASK_ID]}/ft/$MODEL_ID-$DATASET" \
+    "resources/models/seed_${SEEDS[$SLURM_ARRAY_TASK_ID]}/ft/$MODEL_ID-$MODEL_TYPE-$DATASET" \
     "${SEEDS[$SLURM_ARRAY_TASK_ID]}" \
-    "$DATASET"
+    "$DATASET" \
+    "$ENC_ONLY"
