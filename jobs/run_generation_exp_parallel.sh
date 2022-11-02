@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:Tesla-V100-32GB:1
 #SBATCH --partition=volta
-#SBATCH --array=0-6
+#SBATCH --array=0-9
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -75,7 +75,7 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5")
+exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "neu_sent_ctxt_aug5")
 
 # launches a single experiment job for each exp_id in parallel
 srun python generation_exp.py \

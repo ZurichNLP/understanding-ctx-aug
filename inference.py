@@ -387,7 +387,7 @@ class InferenceModel:
                 for line in tqdm(f):
                     context_examples.append(line.strip())
             max_context_examples = min(max_context_examples, len(context_examples))
-            logger.info(f'set random seed {seed}')
+            logger.info(f'set data random seed {seed}')
             random.seed(seed)
             context_examples = list(random.sample(context_examples, max_context_examples))
             logger.info(f'loaded {len(context_examples)} context examples from {context_file}')

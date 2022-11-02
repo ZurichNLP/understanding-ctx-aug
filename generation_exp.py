@@ -34,6 +34,9 @@ def set_args():
             "xa_knowledge+qu_ctxt_aug5",
             "xa_dialog+qu_ctxt_aug5",
             "tagged_qu_ctxt_aug5", # for debugging
+            "pos_sent_ctxt_aug5",
+            "neg_sent_ctxt_aug5",
+            "neu_sent_ctxt_aug5",
         ],
         help="experiment id"
     )
@@ -117,6 +120,21 @@ experiment_configs = {
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
+        "max_context_examples": 10,
+    },
+    "pos_sent_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_pos_sents.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "neg_sent_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neg_sents.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "neu_sent_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neu_sents.txt",
+        "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
 }

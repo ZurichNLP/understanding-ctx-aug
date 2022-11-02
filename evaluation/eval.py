@@ -18,6 +18,7 @@ try:
     from .distinct import distinct_n
     from .tokenization import tokenize_texts
     from .novelty import compute_novelty
+    from .sentiment import classify_sentiment, classify_sentiment_with_vader
 except ImportError:
     from perplexity import score_ppl
     from sentence_processing import count_questions
@@ -25,6 +26,7 @@ except ImportError:
     from distinct import distinct_n
     from tokenization import tokenize_texts
     from novelty import compute_novelty
+    from sentiment import classify_sentiment, classify_sentiment_with_vader
 
 expected_keys = [
     'model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
@@ -52,7 +54,10 @@ def set_args():
                         'xa_dialog', 
                         'xa_dialog+qu_ctxt_aug5', 
                         'xa_knowledge', 
-                        'xa_knowledge+qu_ctxt_aug5'
+                        'xa_knowledge+qu_ctxt_aug5',
+                        'pos_sent_ctxt_aug5', 
+                        'neu_sent_ctxt_aug5',
+                        'neg_sent_ctxt_aug5',
                         ],
                     help='experiment ids to run evaluation for (by default, will evaluate outputs for all)')
 
@@ -105,6 +110,12 @@ def compute_reference_free_metrics(
     result['qc_turn_level'] = sum([1 for i in qc if i > 0]) / len(qc)
     result['qc_sent_level'] = qc.sum() / len(qc)
     
+    # sentiment - we use rule based vader for pos, neg, neu sentiment classification
+    sentiment_preds = classify_sentiment_with_vader(sys_outputs)
+    result['positive_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
+    result['neutral_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
+    result['negative_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
+
     # perplexity
     ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)
     result['ppl_mean'] = ppl_mean
@@ -289,7 +300,15 @@ def main(args):
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge.txt'))
             elif exp_id == 'xa_knowledge+qu_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-*questions-10.txt'))
-            
+            elif exp_id == 'pos_sent_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_pos_sents-10.txt'))
+            elif exp_id == 'neu_sent_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neu_sents-10.txt'))
+            elif exp_id == 'neg_sent_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neg_sents-10.txt'))
+            else:
+                raise ValueError(f'Unknown experiment id: {exp_id}')
+
             assert len(generations_files) != 0, f'No generations files found for {exp_id} in {args.generations}'
 
             results = []

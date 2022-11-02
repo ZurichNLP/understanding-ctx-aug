@@ -81,7 +81,7 @@ source start.sh
 
 
 if [[ -z $exp_id ]]; then
-    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5"; do
+    for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "neu_sent_ctxt_aug5"; do
         echo "Running experiment $exp_id"
         echo "Batch size: $batch_size"
         python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
