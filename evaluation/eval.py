@@ -112,9 +112,9 @@ def compute_reference_free_metrics(
     
     # sentiment - we use rule based vader for pos, neg, neu sentiment classification
     sentiment_preds = classify_sentiment_with_vader(sys_outputs)
-    result['positive_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
-    result['neutral_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
-    result['negative_sent'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
+    result['pos_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
+    result['neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
+    result['neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
 
     # perplexity
     ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)

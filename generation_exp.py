@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import argparse
+import time
 from typing import List, Dict, Optional, Union
 from pathlib import Path
 import pandas as pd
@@ -112,11 +114,6 @@ experiment_configs = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
-    # "tagged_qu_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/questions_tagged.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 10,
-    # },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
@@ -146,6 +143,7 @@ def print_args(args: Dict):
     return string
 
 if __name__ == "__main__":
+    major_start = time.time() # time experiment run
     args = set_args()
     
     checkpoint = args.checkpoint if args.checkpoint is not None else 'best'
@@ -156,6 +154,8 @@ if __name__ == "__main__":
         print(f'Writing generation run results to {outfile}')
         if outfile.exists():
             print(f'[!] Overwriting {outfile}')
+    else:
+        outfile = None
     
     # set generation args
     gen_args = {
@@ -186,10 +186,13 @@ if __name__ == "__main__":
         gen_args.update(debug_config)
     
     results = []
+    seed_count = 0
     for seed in args.seeds:
+        seed_count += 1
+        minor_start = time.time() # time generation run
 
         print('\n***')
-        print(f'Running generation with seed {seed}')
+        print(f'Running generation with seed {seed} ({seed_count}/{len(args.seeds)})')
         gen_args['seed'] = seed
 
         # to execute seperate processes from the command line, uncomment this        
@@ -202,7 +205,18 @@ if __name__ == "__main__":
         outputs = m.generate_KGD(predict_dataset)
         outputs = [o[0] for o in outputs] # take only the first output for each input (in case of multiple return sequences)
         
-        if not args.debug:
+        minor_end = time.time()
+        print(f'◴◵◶◷ Finished generation run with seed {seed} in {minor_end - minor_start:.2f} seconds ◴◵◶◷')
+
+        if args.debug:
+            for i, o in enumerate(outputs):
+                print(f'{i}: {o}')
+            sys.exit()
+        
+        else:
+
+            minor_start = time.time() # time scoring run
+
             scored = score_kgd_generation(
                 outputs, 
                 targets=[[i] for i in predict_dataset['target']],
@@ -214,17 +228,21 @@ if __name__ == "__main__":
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)
         
+            # note: we save the results after each generation run, 
+            # overwriting the results files each time,
+            # to avoid losing data if the process is interrupted
             df = pd.DataFrame(results)
-            print(f'Results has {len(results)} keys for {len(df)} items')
-            print(f'\t{results}')
+            print(f'Results currently has shape {df.shape}. Saving to {outfile} ...')
+            # print('-'*70)
+            # print(f'\t{results}')
+            # print('-'*70)
             df.to_csv(outfile, index=False)
             
-            print(f'Finished generation runs. Results saved to {outfile}')
-        else:
-            for i, o in enumerate(outputs):
-                print(f'{i}: {o}')
-
-
+            minor_end = time.time()
+            print(f'◴◵◶◷ Finished scoring in {minor_end - minor_start:.2f} seconds ◴◵◶◷')
+            
+    major_end = time.time()
+    print(f'◴◵◶◷ Finished all generation runs in {major_end - major_start:.2f} seconds ◴◵◶◷')
 
 
 
