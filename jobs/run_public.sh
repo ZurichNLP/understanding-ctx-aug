@@ -90,6 +90,12 @@ case $HF_MODEL_NAME in
     "facebook/bart-base")
         MODEL_ID="bart_base"
         ;;
+    "resources/models/mass/hf_conv")
+        MODEL_ID="mass_base"
+        ;;
+    "resources/models/fairseq_mass/hf_conv")
+        MODEL_ID="mass_base"
+        ;;
     *)
         echo -n "unknown model name: $HF_MODEL_NAME" && exit 1
     ;;
