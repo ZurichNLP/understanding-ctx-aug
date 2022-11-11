@@ -81,14 +81,29 @@ SLURM_ARGS_VOLTA_LARGE="--qos=vesta --time=12:00:00 --gres gpu:Tesla-V100-32GB:1
 # #######################################################################
 
 case $HF_MODEL_NAME in
+    "facebook/bart-base")
+        MODEL_ID="bart_base"
+        ;;
+    "facebook/bart-large")
+        MODEL_ID="bart_large"
+        ;;
     "t5-small")
         MODEL_ID="t5_small"
+        ;;
+    "t5-base")
+        MODEL_ID="t5_base"
+        ;;
+    "google/t5-v1_1-small")
+        MODEL_ID="t5v11_small"
+        ;;
+    "google/t5-v1_1-base")
+        MODEL_ID="t5v11_base"
         ;;
     "google/t5-small-lm-adapt")
         MODEL_ID="t5_lm_small"
         ;;
-    "facebook/bart-base")
-        MODEL_ID="bart_base"
+    "google/t5-base-lm-adapt")
+        MODEL_ID="t5_lm_base"
         ;;
     "resources/models/mass/hf_conv")
         MODEL_ID="mass_base"
@@ -104,7 +119,7 @@ esac
 
 LOG_DIR="$SAVE_DIR_PREFIX/seed_$SEED/logs/$MODEL_ID"
 FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/$MODEL_ID"
-RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results_topchat_kgd_test_freq"
+RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results/topchat_kgd_test_freq-public_models"
 
 echo "$LOG_DIR"
 echo "$FINETUNE_SAVE_DIR"
@@ -139,7 +154,7 @@ echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 
 id_finetune=$(
     $BASE/jobs/sbatch_bare.sh \
-    $SLURM_ARGS_VOLTA \
+    $SLURM_ARGS_VOLTA_LARGE \
     $SLURM_LOG_ARGS \
     $BASE/jobs/run_finetuning.sh \
     -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED"

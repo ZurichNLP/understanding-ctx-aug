@@ -13,7 +13,7 @@ seed=${3:-42}
 is_encoder_decoder=${4:-False}
 tie_encoder_decoder=${5:-False}
 max_train_samples=${6:-1.0}
-eval_runs_per_epoch=${7:-3}
+eval_runs_per_epoch=${7:-1} # for ablations
 init_as_random=${8:-False}
 data_dir="resources/data/Topical-Chat/KGD"
 log_file="$save_dir/finetune.log"
@@ -51,7 +51,7 @@ python finetune.py \
     --summary_column "target" \
     --knowledge_column "knowledge" \
     --overwrite_cache True \
-    --preprocessing_num_workers 16 \
+    --preprocessing_num_workers 1 \
     --max_source_length 256 --max_target_length 64 \
     --learning_rate 0.0000625 \
     --num_beams 4 \

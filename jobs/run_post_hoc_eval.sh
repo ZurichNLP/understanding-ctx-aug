@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --time=08:00:00
 #SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=4G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
@@ -65,10 +66,7 @@ if [[ -z $test_set ]]; then
 fi
 
 if [[ -z $output_dir ]]; then
-    # will write results to resources/models/seed_1984/results
-    output_dir="$model_path/../../results"
-    echo "Writing results to $output_dir"
-    mkdir -p "$output_dir"
+    print_missing_arg "-o output_dir" "model" && exit 1
 fi
 
 # cd to base dir

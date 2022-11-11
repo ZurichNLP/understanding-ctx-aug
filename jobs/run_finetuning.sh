@@ -19,7 +19,7 @@ SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False
 MAX_TRAIN_SAMPLES=1.0
-EVAL_RUNS_PER_EPOCH=3
+EVAL_RUNS_PER_EPOCH=1 # for ablations
 INIT_AS_RANDOM=False
 
 # arguments that are not supported

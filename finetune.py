@@ -298,7 +298,10 @@ def main():
         "t5-large",
         "t5-3b",
         "t5-11b",
+        "google/t5-v1_1-small",
+        "google/t5-v1_1-base",
         "google/t5-small-lm-adapt",
+        "google/t5-base-lm-adapt"
     ]:
         # update training_args.fp16 with T5 models, since this seems unstable
         training_args.fp16 = False
@@ -356,13 +359,13 @@ def main():
         )
 
     # derive the number of valiation runs at equal intervals per epoch (added for experimentation)
-    if data_args.eval_runs_per_epoch > 1:
-        steps_per_epoch = len(train_dataset) // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)
-        training_args.eval_steps = steps_per_epoch // data_args.eval_runs_per_epoch
-        training_args.save_steps = training_args.eval_steps
-        logger.info(f"Requested {data_args.eval_runs_per_epoch} evaluation runs per epoch. Note, validation set has {len(eval_dataset)} samples with batch size {training_args.per_device_eval_batch_size}.")
-        logger.info(f"Updated `eval_steps` to {training_args.eval_steps}")
-        logger.info(f"Updated `save_steps` to {training_args.save_steps}")
+    # if data_args.eval_runs_per_epoch > 1:
+    steps_per_epoch = len(train_dataset) // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)
+    training_args.eval_steps = steps_per_epoch // data_args.eval_runs_per_epoch
+    training_args.save_steps = training_args.eval_steps
+    logger.info(f"Requested {data_args.eval_runs_per_epoch} evaluation runs per epoch. Note, validation set has {len(eval_dataset)} samples with batch size {training_args.per_device_eval_batch_size}.")
+    logger.info(f"Updated `eval_steps` to {training_args.eval_steps}")
+    logger.info(f"Updated `save_steps` to {training_args.save_steps}")
 
     # Initialize Trainer
     trainer = Seq2SeqTrainer(

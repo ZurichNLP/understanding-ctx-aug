@@ -19,6 +19,7 @@ try:
     from .tokenization import tokenize_texts
     from .novelty import compute_novelty
     from .sentiment import classify_sentiment, classify_sentiment_with_vader
+    from .hedge_detection import count_hedges, hedging_contrast, hedging_management, hedging_evasion
 except ImportError:
     from perplexity import score_ppl
     from sentence_processing import count_questions
@@ -27,6 +28,7 @@ except ImportError:
     from tokenization import tokenize_texts
     from novelty import compute_novelty
     from sentiment import classify_sentiment, classify_sentiment_with_vader
+    from hedge_detection import count_hedges, hedging_contrast, hedging_management, hedging_evasion
 
 expected_keys = [
     'model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
@@ -56,8 +58,11 @@ def set_args():
                         'xa_knowledge', 
                         'xa_knowledge+qu_ctxt_aug5',
                         'pos_sent_ctxt_aug5', 
-                        'neu_sent_ctxt_aug5',
+                        # 'neu_sent_ctxt_aug5',
                         'neg_sent_ctxt_aug5',
+                        'hedging_contrast_ctxt_aug5',
+                        'hedging_management_ctxt_aug5',
+                        'hedging_evasion_ctxt_aug5',
                         ],
                     help='experiment ids to run evaluation for (by default, will evaluate outputs for all)')
 
@@ -111,10 +116,16 @@ def compute_reference_free_metrics(
     result['qc_sent_level'] = qc.sum() / len(qc)
     
     # sentiment - we use rule based vader for pos, neg, neu sentiment classification
-    sentiment_preds = classify_sentiment_with_vader(sys_outputs)
+    # sentiment_preds = classify_sentiment_with_vader(sys_outputs)
+    sentiment_preds = classify_sentiment(sys_outputs, 'distilbert-base-uncased-finetuned-sst-2-english', 256)
     result['pos_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
     result['neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
     result['neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
+
+    # hedging detection
+    result['hedging_contrast'] = count_hedges(sys_outputs, hedging_contrast) / len(sys_outputs)
+    result['hedging_management'] = count_hedges(sys_outputs, hedging_management) / len(sys_outputs)
+    result['hedging_evasion'] = count_hedges(sys_outputs, hedging_evasion) / len(sys_outputs)
 
     # perplexity
     ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)
@@ -301,11 +312,17 @@ def main(args):
             elif exp_id == 'xa_knowledge+qu_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-*questions-10.txt'))
             elif exp_id == 'pos_sent_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_pos_sents-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-pos_sents-5.txt'))
             elif exp_id == 'neu_sent_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neu_sents-10.txt'))
             elif exp_id == 'neg_sent_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neg_sents-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-neg_sents-5.txt'))
+            elif exp_id == 'hedging_contrast_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_contrast-12.txt'))
+            elif exp_id == 'hedging_management_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_management-14.txt'))
+            elif exp_id == 'hedging_evasion_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_evasion-18.txt'))
             else:
                 raise ValueError(f'Unknown experiment id: {exp_id}')
 

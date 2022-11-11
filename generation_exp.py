@@ -39,6 +39,9 @@ def set_args():
             "pos_sent_ctxt_aug5",
             "neg_sent_ctxt_aug5",
             "neu_sent_ctxt_aug5",
+            "hedging_contrast_ctxt_aug5",
+            "hedging_management_ctxt_aug5",
+            "hedging_evasion_ctxt_aug5",
         ],
         help="experiment id"
     )
@@ -120,20 +123,36 @@ experiment_configs = {
         "max_context_examples": 10,
     },
     "pos_sent_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_pos_sents.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/pos_sents.txt",
         "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
+        "max_context_examples": 5,
     },
     "neg_sent_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neg_sents.txt",
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/neg_sents.txt",
         "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
+        "max_context_examples": 5,
     },
     "neu_sent_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neu_sents.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
+    "hedging_contrast_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_contrast.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 12,
+    },
+    "hedging_management_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_management.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 14,
+    },
+    "hedging_evasion_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_evasion.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 18,
+    },
+
 }
 
 def print_args(args: Dict):

@@ -179,16 +179,6 @@ class TopicalChat:
                 if not knowledge_text:
                     self.failed.add(knowledge['article'])
 
-                # if current_dialogue[:-1] != self.normalize_whitespace(current_dialogue[:-1]):
-                #     print('whitespace for turns')
-                #     breakpoint()
-                # if knowledge_text != self.normalize_whitespace(knowledge_text):
-                #     print('whitespace for knowledge')
-                #     breakpoint()
-                # if current_dialogue[-1] != self.normalize_whitespace(current_dialogue[-1]):
-                #     print('whitespace for target')
-                #     breakpoint()
-
                 di = dialogue_instance(
                     turns = self.normalize_whitespace(current_dialogue[:-1]), 
                     knowledge = self.normalize_whitespace(knowledge_text), 
