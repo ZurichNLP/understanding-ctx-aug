@@ -2,7 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
+
+Exploratory data analysis for text data
+
 Loosely based on https://towardsdatascience.com/exploratory-text-analysis-in-python-8cf42b758d9e
+
+Usage:
+    python analysis/eda.py -i infile -v 2
+
 """
 
 import sys
@@ -27,14 +34,16 @@ from scipy import stats
 
 import plotext as plt # https://github.com/piccolomo/plotext
 
+from transformers import AutoTokenizer
 
 def parse_args() -> ArgumentParser:
     ap = ArgumentParser()
     ap.add_argument("-i", "--infile", required=True, help="Input file")
-    ap.add_argument("-o", "--outfile", required=False, help="Output file")
     ap.add_argument("-l", "--lang", required=False, default='english', help="Language")
     ap.add_argument("-v", "--verbose", type=int, required=False, default=0, help="Verbosity level")
     ap.add_argument("-s", "--show_n", type=int, required=False, default=10, help="Number of examples to show")
+    ap.add_argument('--tokenizer', type=str, required=False, default=None, help='Huggingface Tokenizer to use (if not provided, uses Moses)')
+    ap.add_argument("-p", "--plot", action='store_true', help="Plot results")
     return ap.parse_args()
 
 def read_lines(infile: str) -> List[str]:
@@ -44,21 +53,28 @@ def read_lines(infile: str) -> List[str]:
             lines.append(line.strip())
     return lines
 
-def word_tokenize(texts: List[str], lang: str = 'english') -> List[List[str]]:
+def word_tokenize(texts: List[str], lang: str = 'english', tokenizer: Optional[str] = None) -> List[List[str]]:
     """
     Tokenize list of string texts
     """
-    with MosesTokenizer(lang[:2]) as tokenize:
+    if tokenizer is not None:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         if isinstance(texts[0], list):
             tok_texts = []
             for text in tqdm(texts, total=len(texts), desc="Tokenizing Words", disable=True):
-                tok_sents = []
-                for sent in text:
-                    tok_sents.append(' '.join(tokenize(sent)))
-                tok_texts.append(tok_sents)
+                tok_texts.append([' '.join(tokenizer.tokenize(sent)) for sent in text])  # tokenize each sentence individually
             return tok_texts
         else:
-            return [' '.join(tokenize(text)) for text in tqdm(texts, total=len(texts), desc="Tokenizing Words")]
+            return [tokenizer.tokenize(text) for text in tqdm(texts, total=len(texts), desc="Tokenizing with Huggingface Tokenizer", disable=False)]
+    else:
+        with MosesTokenizer(lang[:2]) as tokenize:
+            if isinstance(texts[0], list):
+                tok_texts = []
+                for text in tqdm(texts, total=len(texts), desc="Tokenizing Words", disable=True):
+                    tok_texts.append([tok_sents.append(' '.join(tokenize(sent))) for sent in text]) # tokenize each sentence individually    
+                return tok_texts
+            else:
+                return [' '.join(tokenize(text)) for text in tqdm(texts, total=len(texts), desc="Tokenizing Words")]
 
 def sent_tokenize(texts: List[str], lang: str = 'english') -> List[List[str]]:
     """
@@ -86,6 +102,10 @@ def summarise_dist(array: np.array):
     """Summarise a distribution."""
     print(stats.describe(array))
     print(stats.mode(array, axis=None, keepdims=True))
+    quantiles = [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
+    quantile_values = np.quantile(array, quantiles)
+    for q, v in zip(quantiles, quantile_values):
+        print(f"{q}: {v}")
     return
 
 def get_doc_stats(texts: List[str], lang: str = 'english', show_n: int = 5, verbose: bool = False) -> None:
@@ -111,7 +131,7 @@ def get_doc_stats(texts: List[str], lang: str = 'english', show_n: int = 5, verb
         # get longest docs
         longest_strings = sorted(doc_counter, key=len, reverse=True)[:show_n]
         print(f"Longest docs:\n\t{longest_strings}")
-
+    
     return pd.DataFrame.from_dict(doc_stats, orient='index')
 
 def get_sent_stats(texts: List[str], lang: str = 'english', show_n: int = 10, verbose: bool = False) -> None:
@@ -159,6 +179,13 @@ def get_sent_stats(texts: List[str], lang: str = 'english', show_n: int = 10, ve
         longest_sents = sorted(sentence_counter, key=len, reverse=True)[:show_n]
         print(f"Longest sentences:\n\t{longest_sents}")
 
+        shortest_questions = sorted(question_counter, key=len)[:show_n]
+        print(f"Shortest questions:\n\t{shortest_questions}")
+
+        longest_questions = sorted(question_counter, key=len, reverse=True)[:show_n]
+        print(f"Longest questions:\n\t{longest_questions}")
+
+
     return pd.DataFrame.from_dict(sent_stats, orient='index')
     
 def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, verbose: bool = False) -> None:
@@ -176,10 +203,8 @@ def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, v
     if verbose > 0:
         print(f'\n**** Token-level stats ****')
 
-    # tokenize
-    # texts = word_tokenize(texts, lang)
-
     chars_per_token = []
+    tokens_per_doc = []
     tokens_per_sent = []
     stop_counter = Counter()
     punct_counter = Counter()
@@ -191,8 +216,8 @@ def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, v
     
     # iterate over texts and collect token stats
     # for text in tqdm(texts, total=len(texts), desc="Collecting token-level stats"):
-    # breakpoint()
     for text in texts:
+        tokens_per_doc.append(sum(len(sent.split()) for sent in text))
         for sent in text:
             tokens = sent.split()
             chars_per_token.extend([len(token) for token in tokens])
@@ -210,6 +235,8 @@ def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, v
             fourgram_counter.update(' '.join(ngram) for ngram in ngrams(tokens, 4))
     
     if verbose > 0:
+        print(f'Tokens per document:')
+        summarise_dist(np.array(tokens_per_doc))
         # get descriptive stats for tokens per sentence
         print(f'Tokens per sentence:')
         summarise_dist(np.array(tokens_per_sent))
@@ -217,6 +244,8 @@ def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, v
         print(f'Characters per token:')
         summarise_dist(np.array(chars_per_token))
 
+    # plt.hist(np.array(tokens_per_doc), max(np.array(tokens_per_doc)), label = "Tokens per document", width=40)
+    # plt.show()
 
     # get number of tokens
     tok_stats = summarise_ttr(unigram_counter, 'tokens', verbose=verbose)
@@ -253,9 +282,10 @@ def get_token_stats(texts: List[str], lang: str = 'english', show_n: int = 25, v
     if verbose > 0:
         print(f"Longest (non-stop) tokens:\n\t{longest_tokens}")
 
+
     return pd.DataFrame.from_dict(tok_stats, orient='index')
 
-def do_eda(infile: str, lang: str = 'english', verbose: int = 0):
+def do_eda(infile: str, lang: str = 'english', tokenizer: Optional[str] = None, verbose: int = 0):
     
     texts = read_lines(infile)
 
@@ -266,25 +296,30 @@ def do_eda(infile: str, lang: str = 'english', verbose: int = 0):
     sent_stats = get_sent_stats(texts, verbose=verbose)
 
     # tokenize    
-    texts = word_tokenize(texts, lang=lang)
+    texts = word_tokenize(texts, lang=lang, tokenizer=tokenizer)
     tok_stats = get_token_stats(texts, verbose=verbose)
     
     df = pd.concat([doc_stats, sent_stats, tok_stats])
     
     return df
 
+def plot(df):
+    plt.simple_stacked_bar(
+        df.index.to_list(), 
+        [df['unique'].to_numpy(), df['total'].to_numpy()-df['unique'].to_numpy()],
+        labels=['uniq', 'total'],  
+        width = 100,
+        )
+    plt.show()
+
+    return 
 
 if __name__ == '__main__':
     args = parse_args()
     infile = args.infile
     verbose = args.verbose
-    df = do_eda(infile, verbose=verbose)
+    df = do_eda(infile, args.lang, args.tokenizer, verbose=verbose)
     print(df)
 
-    plt.simple_stacked_bar(
-        df.index.to_list(), 
-        [df['unique'].to_numpy(), df['total'].to_numpy()-df['unique'].to_numpy()],
-        labels=['uniq', 'total'],  width = 100
-        )
-
-    plt.show()
+    if args.verbose > 2:
+        plot(df)

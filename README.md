@@ -214,7 +214,20 @@ jid2=$(sbatch --dependency=afterok:$jid1 jobs/run_finetuning.sh -p resources/mod
 jid3=$(sbatch --dependency=afterok:$jid2 jobs/run_generation_exp_parallel.sh -m resources/models/seed_193847/ft/bart_small-denoising-rl1_mr01_rt0_ps1_in0_pl3_ma03 -o results/seed_193847 | sed 's/Submitted batch job //')
 ``` -->
 
+## Generating with ctx. aug. / attn. biasing
 
+The script `generation_exp.py` contains a series of hardcoded experimental configs. 
+To run a new experiment (i.e. all seeded generation runs), you can define a new experiment config in this script, e.g.:
+
+```
+"short_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/short_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 5,
+    },
+```
+
+To avoid errors with post-hoc evaluation (not always used), you should also add the name of the experiment and the relevant filepath ending in `eval.py`.
 
 
 

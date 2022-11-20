@@ -31,17 +31,25 @@ def set_args():
             "baseline",
             "xa_knowledge",
             "xa_dialog",
-            "qu_ctxt_aug5",
             "qu_ctxt_aug1",
+            "qu_ctxt_aug5",
             "xa_knowledge+qu_ctxt_aug5",
             "xa_dialog+qu_ctxt_aug5",
-            "tagged_qu_ctxt_aug5", # for debugging
+            # "tagged_qu_ctxt_aug5", # for debugging
             "pos_sent_ctxt_aug5",
             "neg_sent_ctxt_aug5",
-            "neu_sent_ctxt_aug5",
+            # "neu_sent_ctxt_aug5",
+            "short_qu_ctxt_aug5",
+            "ambig_qu_ctxt_aug5",
+            "ambig_excl_ctxt_aug5",
+            "excl_ctxt_aug5",
             "hedging_contrast_ctxt_aug5",
             "hedging_management_ctxt_aug5",
             "hedging_evasion_ctxt_aug5",
+            "e_words_ctxt_aug5",
+            "d_words_ctxt_aug5",
+            "i_words_ctxt_aug5",
+            "n_words_ctxt_aug5",
         ],
         help="experiment id"
     )
@@ -117,6 +125,11 @@ experiment_configs = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
+    "short_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/short_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 5,
+    },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
@@ -132,27 +145,61 @@ experiment_configs = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 5,
     },
-    "neu_sent_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neu_sents.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
+    # "neu_sent_ctxt_aug5": {
+    #     "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neu_sents.txt",
+    #     "context_code_attention_bias_value": 5,
+    #     "max_context_examples": 10,
+    # },
     "hedging_contrast_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_contrast.txt",
         "context_code_attention_bias_value": 5,
-        "max_context_examples": 12,
+        "max_context_examples": 5,
     },
     "hedging_management_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_management.txt",
         "context_code_attention_bias_value": 5,
-        "max_context_examples": 14,
+        "max_context_examples": 5,
     },
     "hedging_evasion_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_evasion.txt",
         "context_code_attention_bias_value": 5,
-        "max_context_examples": 18,
+        "max_context_examples": 5,
     },
-
+    "ambig_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_ambig_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "ambig_excl_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_amibig_exclamations.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "excl_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_exclamations.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "e_words_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/E_words.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "d_words_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/D_words.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "i_words_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/I_words.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "n_words_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/N_words.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
 }
 
 def print_args(args: Dict):

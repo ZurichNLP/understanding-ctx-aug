@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Compare EDA features between two files
+
+Usage:
+    python compare_eda.py <inf1> <inf2> [-v <verbose>] [-c <column>]
+"""
+
 import sys
 import re
 import random

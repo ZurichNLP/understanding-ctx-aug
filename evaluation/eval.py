@@ -13,22 +13,22 @@ import pandas as pd
 
 try:
     from .perplexity import score_ppl
-    from .sentence_processing import count_questions
+    from .sentence_processing import count_questions, count_exclamations
     from .reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
     from .distinct import distinct_n
     from .tokenization import tokenize_texts
     from .novelty import compute_novelty
     from .sentiment import classify_sentiment, classify_sentiment_with_vader
-    from .hedge_detection import count_hedges, hedging_contrast, hedging_management, hedging_evasion
+    from .hedge_detection import HedgeHogModel, count_hedge_phrases, hedging_contrast, hedging_management, hedging_evasion
 except ImportError:
     from perplexity import score_ppl
-    from sentence_processing import count_questions
+    from sentence_processing import count_questions, count_exclamations
     from reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
     from distinct import distinct_n
     from tokenization import tokenize_texts
     from novelty import compute_novelty
     from sentiment import classify_sentiment, classify_sentiment_with_vader
-    from hedge_detection import count_hedges, hedging_contrast, hedging_management, hedging_evasion
+    from hedge_detection import HedgeHogModel, count_hedge_phrases, hedging_contrast, hedging_management, hedging_evasion
 
 expected_keys = [
     'model_name_or_path', 'checkpoint_dir', 'test_file', 'text_column', 'summary_column', 
@@ -53,6 +53,7 @@ def set_args():
                         'baseline', 
                         'qu_ctxt_aug1', 
                         'qu_ctxt_aug5', 
+                        'short_qu_ctxt_aug5',
                         'xa_dialog', 
                         'xa_dialog+qu_ctxt_aug5', 
                         'xa_knowledge', 
@@ -63,6 +64,13 @@ def set_args():
                         'hedging_contrast_ctxt_aug5',
                         'hedging_management_ctxt_aug5',
                         'hedging_evasion_ctxt_aug5',
+                        'ambig_qu_ctxt_aug5',
+                        'ambig_excl_ctxt_aug5',
+                        'e_words_ctxt_aug5',
+                        'd_words_ctxt_aug5',
+                        'i_words_ctxt_aug5',
+                        'n_words_ctxt_aug5',
+                        'excl_ctxt_aug5',
                         ],
                     help='experiment ids to run evaluation for (by default, will evaluate outputs for all)')
 
@@ -108,34 +116,72 @@ def compute_reference_free_metrics(
 
     result = {}
 
+    if verbose:
+        print('computing string level metrics...')
     result['uniq'] = uniq_response_ratio(sys_outputs)
-    
+    lens = np.array([len(text.split()) for text in tokenize_texts(sys_outputs)])
+    result['len_mean'] = lens.mean()
+    result['len_std'] = lens.std()
+
+
     # question count
+    if verbose:
+        print('counting questions...')
     qc = count_questions(sys_outputs)  
     result['qc_turn_level'] = sum([1 for i in qc if i > 0]) / len(qc)
     result['qc_sent_level'] = qc.sum() / len(qc)
-    
+
+    if verbose:
+        print('counting exclamations...')
+    ec = count_exclamations(sys_outputs)
+    result['ec_turn_level'] = sum([1 for i in ec if i > 0]) / len(ec)
+    result['ec_sent_level'] = ec.sum() / len(ec)
+
+    if verbose:
+        print('predicting sentiment...')
     # sentiment - we use rule based vader for pos, neg, neu sentiment classification
-    # sentiment_preds = classify_sentiment_with_vader(sys_outputs)
-    sentiment_preds = classify_sentiment(sys_outputs, 'distilbert-base-uncased-finetuned-sst-2-english', 256)
+    sentiment_preds = classify_sentiment_with_vader(sys_outputs)
+    result['vader_pos_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
+    result['vader_neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
+    result['vader_neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
+
+    sentiment_preds = classify_sentiment(sys_outputs, 'distilbert-base-uncased-finetuned-sst-2-english', 512)
     result['pos_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
     result['neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
     result['neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
 
     # hedging detection
-    result['hedging_contrast'] = count_hedges(sys_outputs, hedging_contrast) / len(sys_outputs)
-    result['hedging_management'] = count_hedges(sys_outputs, hedging_management) / len(sys_outputs)
-    result['hedging_evasion'] = count_hedges(sys_outputs, hedging_evasion) / len(sys_outputs)
+    if verbose:
+        print('detecting hedging...')
+    result['hedging_contrast'] = count_hedge_phrases(sys_outputs, hedging_contrast) / len(sys_outputs)
+    result['hedging_management'] = count_hedge_phrases(sys_outputs, hedging_management) / len(sys_outputs)
+    result['hedging_evasion'] = count_hedge_phrases(sys_outputs, hedging_evasion) / len(sys_outputs)
+
+    # uncertainty cues hedging detection
+    hedgehog = HedgeHogModel(use_cuda=True, batch_size=512, mp=False)
+    predictions, _ = hedgehog.annotate(sys_outputs)
+    token_counts, sent_counts = hedgehog.count_hedges(predictions)
+    for key, value in sent_counts.items():
+        result[f'{key}_sents'] = value / sum(sent_counts.values())
+    for key, value in token_counts.items():
+        result[f'{key}_tokens'] = value # this is the raw count, not the ratio
 
     # perplexity
-    ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)
+    if verbose:
+        print('computing perplexity...')
+    ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=512)
     result['ppl_mean'] = ppl_mean
     result['ppl_std'] = ppl_std
 
     # distint-n
+    if verbose:
+        print('computing distint-n...')
     dist = distinct_n(tokenize_texts(sys_outputs)) # returns dict
     result.update(dist)
 
+    # self-bleu
+    if verbose:
+        print('computing self-bleu...')
     self_bleu = compute_self_bleu(sys_outputs, use_subset=200, is_tokenized=False, verbose=verbose)
     result['self_bleu'] = self_bleu['score']
 
@@ -300,17 +346,19 @@ def main(args):
             if exp_id == 'baseline':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9.txt'))
             elif exp_id == 'qu_ctxt_aug1':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=1-*questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=1-train_questions-10.txt'))
             elif exp_id == 'qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-*questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_questions-10.txt'))
+            elif exp_id == 'short_qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-short_questions-5.txt'))
             elif exp_id == 'xa_dialog':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog.txt'))
             elif exp_id == 'xa_dialog+qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog_ctxt=5-*questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-dialog_ctxt=5-train_questions.txt'))
             elif exp_id == 'xa_knowledge':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge.txt'))
             elif exp_id == 'xa_knowledge+qu_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-*questions-10.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_xatt=5-knowledge_ctxt=5-train_questions-10.txt'))
             elif exp_id == 'pos_sent_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-pos_sents-5.txt'))
             elif exp_id == 'neu_sent_ctxt_aug5':
@@ -318,11 +366,25 @@ def main(args):
             elif exp_id == 'neg_sent_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-neg_sents-5.txt'))
             elif exp_id == 'hedging_contrast_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_contrast-12.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_contrast-5.txt'))
             elif exp_id == 'hedging_management_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_management-14.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_management-5.txt'))
             elif exp_id == 'hedging_evasion_ctxt_aug5':
-                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_evasion-18.txt'))
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_evasion-5.txt'))
+            elif exp_id == 'ambig_qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_amibig_questions-10.txt'))
+            elif exp_id == 'ambig_excl_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_amibig_exclamations-10.txt'))
+            elif exp_id == 'e_words_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-e_words-5.txt'))
+            elif exp_id == 'd_words_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-d_words-5.txt'))
+            elif exp_id == 'i_words_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-i_words-5.txt'))
+            elif exp_id == 'n_words_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-n_words-5.txt'))
+            elif exp_id == 'excl_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_exclamations-5.txt'))
             else:
                 raise ValueError(f'Unknown experiment id: {exp_id}')
 

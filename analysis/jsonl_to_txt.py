@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Convert jsonl <field> to txt file
+
+Usage:
+    python jsonl_to_txt.py <infile> <outfile> <field>
+
+"""
+
 import sys
 import json
 

@@ -71,14 +71,14 @@ def preprocess_topical_chat_dataset(examples, tokenizer, **kwargs):
     if kwargs['source_prefix']: # will skip if None or empty string
         prefix_tok = tokenizer(kwargs['source_prefix'], add_special_tokens=False)['input_ids']
         inputs = [prefix_tok + inp_tok for inp_tok in inputs]
-    
+
     # add bos and eos tokens to input sequence
     if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
         inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
-    else:
+    elif tokenizer.eos_token_id is not None:
         inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
-    # else: # if using BERT2BERT, we use the sep token as a stand-in for the eos token
-    #     inputs = [[tokenizer.sep_token_id] + inp_tok for inp_tok in inputs]
+    else: # if neither bos nor eos is available, use the CLS token as bos following BERT convention (required for MASS model)
+        inputs = [[tokenizer.cls_token_id] + inp_tok for inp_tok in inputs]
 
     model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
 

@@ -173,7 +173,7 @@ class InferenceModel:
             context_examples = self.load_context_examples(
                 self.gen_args.context_augmentation_examples, 
                 self.gen_args.max_context_examples, 
-                self.gen_args.data_seed
+                self.gen_args.seed
                 )
 
         context_code = self.encode_context(context_examples) if context_examples else None
@@ -367,7 +367,7 @@ class InferenceModel:
         Loads the context sentences from the given file.
         """
         
-        if context_file == 'dummy':       
+        if context_file == 'dummy_questions':       
             context_examples = [
                 'Am I a teacher?',
                 'Are you from France?',
@@ -381,6 +381,26 @@ class InferenceModel:
                 'Was he nice?',
                 ]
             logger.info(f'using {len(context_examples)} dummy context examples')
+        
+        elif context_file == 'dummy_prompt':
+            context_examples = [
+                'Respond with a question:',
+                'Answer with a question:',
+                'Continue with a question:',
+                'Ask a question:',
+                ]
+            logger.info(f'using {len(context_examples)} dummy prompt context examples')
+
+        elif context_file == 'dummy_exclamations':
+            context_examples = [
+                'No Way!',
+                'So True!',
+                'Help me out here!',
+                'I don\'t know!',
+                'I think so!',
+                ]
+            logger.info(f'using {len(context_examples)} dummy prompt context examples')
+
         elif Path(context_file).is_file():
             context_examples = []
             with open(context_file, 'r', encoding='utf8') as f:
