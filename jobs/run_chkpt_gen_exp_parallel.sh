@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=8G
-#SBATCH --gres=gpu:Tesla-V100-32GB:1
+#SBATCH --gres=gpu:1
 #SBATCH --qos=vesta
 #SBATCH --partition=volta
 #SBATCH --array=0-9
@@ -80,7 +80,8 @@ source start.sh
 
 mkdir -p "$output_dir"
 
-exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5")
+# exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5")
+exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "excl_ctxt_aug5")
 
 # checkpoints=$( ls -v "$model_path" | grep -P "checkpoint-" )
 # get the last checkpoint from each epoch

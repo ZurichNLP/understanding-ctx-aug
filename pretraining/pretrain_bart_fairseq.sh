@@ -5,7 +5,7 @@
 # https://github.com/facebookresearch/fairseq/issues/1899#issuecomment-1069429320
 
 # default values
-HEADS_PROB="None"
+HEADS_PROB=0.5
 
 # argument parser
 while [[ $# -gt 0 ]]; do
@@ -138,6 +138,6 @@ fairseq-train "$DATA_DIR" \
     --poisson-lambda "$POISSON_LAMBDA" `# defined in paper as lambda=3` \
     --mask "$MASK" `# portion of words/subwords that will be masked` \
     --denoising-method "$DENOISING_METHOD" `# ["default", "bart", "t5", "mass"]` \
-    --heads-prob "$HEADS_PROB" `# probability of using BART or T5 style denosing (only required for BART5 denoising method)` \
+    --heads-prob "$HEADS_PROB" `# probability of using BART or T5 style denosing (only required for BART5 denoising method)`
 
 echo "$SAVE_DIR"

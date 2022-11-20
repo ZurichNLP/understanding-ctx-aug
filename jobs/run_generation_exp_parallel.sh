@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=volta
-#SBATCH --array=0-11
+#SBATCH --array=0-15
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -76,7 +76,9 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5")
+# exp_ids=("baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5")
+# exp_ids=("qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5")
+exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_management_ctxt_aug5" "hedging_evasion_ctxt_aug5" "e_words_ctxt_aug5" "d_words_ctxt_aug5" "i_words_ctxt_aug5" "n_words_ctxt_aug5")
 
 # launches a single experiment job for each exp_id in parallel
 srun python generation_exp.py \
