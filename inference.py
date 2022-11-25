@@ -208,7 +208,7 @@ class InferenceModel:
         outputs = [outputs[i:i+self.gen_args.num_return_sequences] for i in range(0, len(outputs), self.gen_args.num_return_sequences)]
 
         # if not decdoing the full test set and is debug run, print to stdout
-        if self.gen_args.debug:
+        if self.gen_args.write_to_file == 'none' or self.gen_args.debug:
             for src, gen in zip(src_seqs, outputs):
                 print()
                 print(f'Input:\t{src}')

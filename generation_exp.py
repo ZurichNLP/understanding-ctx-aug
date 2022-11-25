@@ -11,7 +11,7 @@ import pandas as pd
 import json
 
 from inference import InferenceModel
-from evaluation.eval import score_kgd_generation
+from evaluation.evaluation import score_kgd_generation
 
 def set_args():
 
@@ -39,6 +39,8 @@ def set_args():
             "pos_sent_ctxt_aug5",
             "neg_sent_ctxt_aug5",
             # "neu_sent_ctxt_aug5",
+            "single_qu_ctxt_aug5",
+            "single_pos_ctxt_aug5",
             "short_qu_ctxt_aug5",
             "ambig_qu_ctxt_aug5",
             "ambig_excl_ctxt_aug5",
@@ -130,6 +132,11 @@ experiment_configs = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 5,
     },
+    "single_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 1,
+    },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
@@ -139,6 +146,11 @@ experiment_configs = {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/pos_sents.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 5,
+    },
+    "single_pos_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/pos_sents.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 1,
     },
     "neg_sent_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/neg_sents.txt",

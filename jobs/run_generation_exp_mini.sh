@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --time=2:00:00 # set to ~1 hour per generation setting
+#SBATCH --time=3:00:00 # set to ~1 hour per generation setting
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=8G
-#SBATCH --gres=gpu:Tesla-V100-32GB:1
+#SBATCH --gres=gpu:1
 #SBATCH --partition=volta
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_generation_exp.sh  -m resources/models/ft/bart_small-rl1_mr01_rt1_ps1_in0_pl3_ma03 -e xa_knowledge
+# sbatch jobs/run_generation_exp_mini.sh  -m resources/models/ft/bart_small-MLM_PS -e xa_knowledge
 
 # NOTE, for smaller models, you can parallelise the experiments with jobs/run_generation_exp_parallel.sh!
 # For larger models, parallelisation fails.
@@ -81,20 +81,20 @@ source start.sh
 #######################################################################
 
 
-if [[ -z $exp_id ]]; then
-    # for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5"; do
-    # for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5"; do
-    # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5"; do
-    for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_management_ctxt_aug5" "hedging_evasion_ctxt_aug5" "e_words_ctxt_aug5" "d_words_ctxt_aug5" "i_words_ctxt_aug5" "n_words_ctxt_aug5"; do
-        echo "Running experiment $exp_id"
-        echo "Batch size: $batch_size"
-        python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
-    done
-else
-    echo "Running experiment $exp_id"
-    echo "Batch size: $batch_size"
-    python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
-fi
+# if [[ -z $exp_id ]]; then
+#     # for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5"; do
+#     # for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5"; do
+#     # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5"; do
+#     # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_management_ctxt_aug5" "hedging_evasion_ctxt_aug5" "e_words_ctxt_aug5" "d_words_ctxt_aug5" "i_words_ctxt_aug5" "n_words_ctxt_aug5"; do
+#         echo "Running experiment $exp_id"
+#         echo "Batch size: $batch_size"
+#         python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
+#     done
+# else
+echo "Running experiment $exp_id"
+echo "Batch size: $batch_size"
+python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id"
+# fi
 
 echo ""
 echo "Done."

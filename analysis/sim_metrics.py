@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from scipy.stats import pearsonr, linregress
+from scipy.spatial.distance import pdist, cdist, dice, hamming, jaccard
 
 def simple_matching_coefficient(X, Y):
     """
@@ -9,9 +11,43 @@ def simple_matching_coefficient(X, Y):
     """
     return np.sum(X == Y) / len(X)
 
+def compute_sim(src_preds, tgt_preds):
+    smi = simple_matching_coefficient(src_preds, tgt_preds)
+    pearson = pearsonr(src_preds, tgt_preds)[0]
+    jaccard_score = jaccard(src_preds, tgt_preds)
+    print(f'{sum(src_preds)/len(src_preds):.4f}\t{sum(tgt_preds)/len(tgt_preds):.4f}\t{smi:.4f}\t{pearson:.4f}\t{jaccard_score:.4f}')
+
+def compare_dist_metrics(X, Y):
+    print('X:', X)
+    print('Y:', Y)
+    print('SMC:', simple_matching_coefficient(X, Y))
+    print('SMC:', simple_matching_coefficient(Y, X))
+    print('JAC:', jaccard(X, Y))
+    print('JAC:', jaccard(Y, X))
+    print('HAM:', hamming(X, Y))
+    print('HAM:', hamming(Y, X))
+    print('DIC:', dice(X, Y))
+    print('DIC:', dice(Y, X))
+    print()
+
 if __name__ == '__main__':
+
     p = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q = np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 1])
+    compare_dist_metrics(p, q)
 
-    print(simple_matching_coefficient(p, q))
-    print(simple_matching_coefficient(q, p))
+    p = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+    q = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    compare_dist_metrics(p, q)
+
+    p = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+    q = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+    compare_dist_metrics(p, q)
+
+    p = np.array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0])
+    q = np.array([0, 0, 0, 0, 1, 1, 1, 1, 1, 1])
+    compare_dist_metrics(p, q)
+
+    p = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0])
+    q = np.array([0, 0, 0, 1, 1, 0, 0, 0, 0, 1])
+    compare_dist_metrics(p, q)

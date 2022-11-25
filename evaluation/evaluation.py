@@ -54,11 +54,13 @@ def set_args():
                         'qu_ctxt_aug1', 
                         'qu_ctxt_aug5', 
                         'short_qu_ctxt_aug5',
+                        'single_qu_ctxt_aug5',
                         'xa_dialog', 
                         'xa_dialog+qu_ctxt_aug5', 
                         'xa_knowledge', 
                         'xa_knowledge+qu_ctxt_aug5',
                         'pos_sent_ctxt_aug5', 
+                        'single_pos_ctxt_aug5',
                         # 'neu_sent_ctxt_aug5',
                         'neg_sent_ctxt_aug5',
                         'hedging_contrast_ctxt_aug5',
@@ -385,6 +387,10 @@ def main(args):
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-n_words-5.txt'))
             elif exp_id == 'excl_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_exclamations-5.txt'))
+            elif exp_id == 'single_qu_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_questions-1.txt'))
+            elif exp_id == 'single_pos_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-pos_sents-1.txt'))
             else:
                 raise ValueError(f'Unknown experiment id: {exp_id}')
 

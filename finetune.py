@@ -46,7 +46,7 @@ from transformers.utils import check_min_version, is_offline_mode, send_example_
 from transformers.utils.versions import require_version
 from transformers.trainer_callback import EarlyStoppingCallback
 
-from evaluation.eval import score_kgd_generation
+from evaluation.evaluation import score_kgd_generation
 from data import prepare_data_for_model
 from hf_args import ModelArguments, DataTrainingArguments
 
@@ -196,7 +196,7 @@ def make_compute_metrics(model_args, data_args, training_args, tokenizer, logger
     """
     def compute_metrics(eval_preds, model_args=model_args, data_args=data_args, training_args=training_args, tokenizer=tokenizer, logger=logger) -> Dict:
         """
-        Scores KGD with evaluation functions in evalutate/eval.py. 
+        Scores KGD with evaluation functions in evalutate/evaluate.py. 
         Note, this computes a number of metrics, so can be slow...
         """
         preds = eval_preds.predictions # np.array of shape (num_examples, max_seq_len)

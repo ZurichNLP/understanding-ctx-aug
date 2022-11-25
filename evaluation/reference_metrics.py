@@ -23,6 +23,7 @@ bleu = evaluate.load('sacrebleu')
 rouge = evaluate.load('rouge')
 meteor = evaluate.load('meteor')
 exact_match_metric = evaluate.load("exact_match")
+bertscore = evaluate.load('bertscore')
 
 def compute_rouge(predictions: List[str], references: List[List[str]], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
@@ -113,3 +114,18 @@ def compute_self_bleu(predictions: List[str], use_subset: int = 200, is_tokenize
         cur_refs = random.sample(cur_refs, min(use_subset, len(cur_refs)))
         references.append(cur_refs)
     return compute_bleu(predictions, references, is_tokenized=is_tokenized, verbose=verbose)
+
+def compute_bertscore(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
+    """
+    https://huggingface.co/spaces/evaluate-metric/bertscore
+
+    predictions = ["hello there", "general kenobi"]
+    references = [
+        ["hello there general kenobi", "hello there !"],
+        ["foo bar foobar"]
+    ]   
+    """ 
+    if verbose:
+        # logger.info(f'Computing BERTScore with {len(predictions)} predictions and {len(references)} references...')
+        print(f'Computing BERTScore with {len(predictions)} predictions and {len(references)} references...')
+    return bertscore.compute(predictions=predictions, references=references, model_type="distilbert-base-uncased")

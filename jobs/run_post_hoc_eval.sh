@@ -87,7 +87,7 @@ log_file="$log_dir/$(basename "$model_path")_post_hoc_eval.log"
 
 echo "Logging to $log_file"
 
-python evaluation/eval.py \
+python evaluation/evaluation.py \
     "$model_outputs" \
     --references_file "$test_set" \
     --output_dir "$output_dir" | tee "$log_file"

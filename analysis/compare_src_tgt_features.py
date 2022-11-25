@@ -1,44 +1,53 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Compute the similarity between src and tgt texts given the existance of a specific feature (e.g. question mark).
-
-Usage:
-    python compare_src_tgt_features.py <src_file> <tgt_file>
-"""
-
 import sys
 import numpy as np
-from scipy.stats import pearsonr
+import pandas as pd
 
-from sim_metrics import simple_matching_coefficient
+from sim_metrics import compute_sim
 
-src_file = sys.argv[1]
-tgt_file = sys.argv[2]
+df = pd.read_csv(sys.argv[1], sep=',') # resources/sentiment_features.csv
+feature_type = sys.argv[2] # 'sentiment'
 
-def iter_lines(file):    
-    with open(file, 'r', encoding='utf8') as f:
-        for line in f:
-            yield line.strip()
+print(f'Correlation between src and tgt texts given the existance of a specific feature: {feature_type}')
+print(df.columns)
 
-src_counter = []
-tgt_counter = []
-for src_line, tgt_line in zip(iter_lines(src_file), iter_lines(tgt_file)):
-    src_line = src_line.strip()
-    tgt_line = tgt_line.strip()
-    
-    src_counter.append(sum([1 for x in src_line if x == '?']))
-    tgt_counter.append(sum([1 for x in tgt_line if x == '?']))
-    # breakpoint()
-    
-print(np.mean(src_counter))
-print(np.mean(tgt_counter))
+# df = df.sample(frac=0.25).reset_index(drop=True) # shuffle
+# print(df.shape)
 
-identity_tgt = [1 if x > 0 else 0 for x in tgt_counter]
-for i in range(1, max(src_counter) + 1):
-    identity_src = [1 if x >= i else 0 for x in src_counter]
-    smi = simple_matching_coefficient(identity_src, identity_tgt)
-    pearson = pearsonr(identity_src, identity_tgt)[0]
-    print(f'{i}\t{sum(identity_src)}\t{sum(identity_tgt)}\t{smi}\t{pearson}')
-    
+for col in df.columns:
+    if col.startswith('src') and col.endswith(feature_type):
+        print(f'{col} vs. TGT')
+        compute_sim(df[col], df[f'tgt_{feature_type}'])
+
+# speaker consistency
+print('\nSpeaker consistency')
+spkr_preds_summed = df[[f'src_2_{feature_type}', f'src_4_{feature_type}']].to_numpy().sum(axis=1)
+for i in range(1, max(spkr_preds_summed) + 1):
+    print(f'SRC (>={i}) vs. TGT')
+    src_ind = [1 if x >= i else 0 for x in spkr_preds_summed]
+    compute_sim(src_ind, df[f'tgt_{feature_type}'])
+
+# mirroring
+print('\nMirroring')
+opp_spkr_preds_summed = df[[f'src_1_{feature_type}', f'src_3_{feature_type}',f'src_5_{feature_type}']].to_numpy().sum(axis=1)
+for i in range(1, max(opp_spkr_preds_summed) + 1):
+    print(f'SRC (>={i}) vs. TGT')
+    src_ind = [1 if x >= i else 0 for x in opp_spkr_preds_summed]
+    compute_sim(src_ind, df[f'tgt_{feature_type}'])
+
+# strength of src sentiment features
+print(f'\nStrength of src {feature_type} features')
+src_preds_summed = df[[f'src_0_{feature_type}', f'src_1_{feature_type}', f'src_2_{feature_type}', f'src_3_{feature_type}', f'src_4_{feature_type}', f'src_5_{feature_type}']].to_numpy().sum(axis=1)
+for i in range(1, max(src_preds_summed) + 1):
+    src_ind = [1 if x >= i else 0 for x in src_preds_summed]
+    print(f'SRC (>={i}) vs. TGT')
+    compute_sim(src_ind, df[f'tgt_{feature_type}'])
+
+# for i in range(1, max(src_preds_summed) + 1):
+print(f'Majority')
+# breakpoint()
+src_ind = [1 if x >= 3 else 0 for x in src_preds_summed]
+compute_sim(src_ind, df[f'tgt_{feature_type}'])
+

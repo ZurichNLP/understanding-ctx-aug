@@ -10,7 +10,7 @@
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-
+# NOTE: the sbatch --array argument should correspond to the number of checkpoints to run inference with
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
@@ -80,12 +80,12 @@ source start.sh
 
 mkdir -p "$output_dir"
 
-# exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5")
-exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "excl_ctxt_aug5")
+exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "excl_ctxt_aug5" "qu_ctxt_aug1" "single_qu_ctxt_aug5")
 
 # checkpoints=$( ls -v "$model_path" | grep -P "checkpoint-" )
 # get the last checkpoint from each epoch
 checkpoints=( $( ls -v "$model_path" | grep 'checkpoint-' | awk 'NR % 3 == 0' | tr '\n' ' ') )
+# checkpoints=( $( ls -v "$model_path" | grep 'checkpoint-' | head -n 2 | tr '\n' ' ' ))
 # mapfile -t checkpoints < <($( ls -v "$model_path" | grep 'checkpoint-' | awk 'NR % 3 == 0' ))
 # checkpoints=$(find "$model_path" -iname "checkpoint-*" -type d)
 

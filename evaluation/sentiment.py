@@ -135,7 +135,8 @@ def get_texts(input_file, target_column, sample):
 
 def classify_sentiment(texts, model_name, batch_size):
     pipe = init_pipe(model_name, batch_size)
-    results = [pred for pred in tqdm(pipe(texts), total=len(texts))]
+    tokenizer_kwargs = {'padding':True, 'truncation':True, 'max_length':512,}
+    results = [pred for pred in tqdm(pipe(texts, **tokenizer_kwargs), total=len(texts))]
     return results
 
 def parse_vader_result(d):
