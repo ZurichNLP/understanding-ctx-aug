@@ -65,14 +65,15 @@ source start.sh
 # LAUNCH JOB
 #######################################################################
 
-for split in valid_rare valid_freq test_freq test_rare train; do
-    python prepare_topical_chat_dataset.py \
+save_dir="$data_dir/../CD"
+for split in valid test train; do
+    python prepare_commonsense_dialog_dataset.py \
         --data_dir "$data_dir" \
         --split "$split" \
-        --save_dir "$data_dir/KGD"
+        --save_dir "$save_dir"
 done
 
 # extract questions for context augmentation experiments
 python collect_contexts.py \
-    --corpus_file "$data_dir/KGD/train.json" \
-    --outfile "$data_dir/KGD/contexts/train_questions.txt"
+    --corpus_file "$save_dir/train.json" \
+    --outfile "$save_dir/contexts/train_questions.txt"

@@ -93,11 +93,11 @@ parse_denoising_args_to_string() {
 
 infer_output_path() {
     model_path="$1"
-    dataset_path="$2"
+    test_file="$2"
 
     # Extract the model name from the model path
     model_name=$(basename "$model_path")
-    echo "$model_name"
+    # echo "$model_name"
     if [[ "$model_name" == "bart_small"* ]]; then
         model_type="bart_small"
     else
@@ -105,12 +105,12 @@ infer_output_path() {
     fi
 
     # Extract the dataset name from the dataset path
-    dataset_name=$(basename "$dataset_path" | cut -d'.' -f1)
-
+    test_file_id=$(basename "$test_file" | cut -d'.' -f1) # test_freq, test_rare or test
+    dataset=$(echo "$test_file" | cut -d'/' -f 4) # KGD or CD
     seed=$(echo "$model_path" | cut -d'/' -f3 | cut -d'_' -f2)
 
     # Construct the output path
-    output_path="resources/models/seed_${seed}/results/topchat_kgd_${dataset_name}-${model_type}"
+    output_path="resources/models/seed_${seed}/${dataset}/results/${test_file_id}-${model_type}"
 
     echo "$output_path"
 }

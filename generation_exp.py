@@ -18,7 +18,8 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
     ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if required")
-    ap.add_argument("--dataset", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
+    ap.add_argument("--dataset", type=str, required=False, default="tc", choices=["tc", "topical_chat", "cd", "cs_dialogue"], help="dataset type")
+    ap.add_argument("--test_file", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
     ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
     ap.add_argument("--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
@@ -54,6 +55,11 @@ def set_args():
             "d_words_ctxt_aug5",
             "i_words_ctxt_aug5",
             "n_words_ctxt_aug5",
+            # "cs-xa_knowledge",
+            # "cs-xa_dialog",
+            # "cs-qu_ctxt_aug5",
+            # "cs-single_qu_ctxt_aug5",
+            # "cs-qu_ctxt_aug1",
         ],
         help="experiment id"
     )
@@ -103,24 +109,37 @@ if __name__ == "__main__":
         "model_name_or_path": args.model_dir,
         "checkpoint_dir": args.checkpoint,
         "batch_size": args.batch_size,
-        "test_file": args.dataset, # add dataset passed as argument
+        "test_file": args.test_file, # add dataset passed as argument
         "data_seed": args.data_seed,
         "max_predict_samples": args.max_predict_samples,
         "output_dir": args.generation_dir,
         }
 
     # dataset-specific args
-    gen_args.update(topical_chat_data_config)
+    if args.dataset.lower() in ['tc', 'topical_chat']:
+        gen_args.update(topical_chat_data_config)
+    elif args.dataset.lower() in ['cd', 'cs_dialogue']:
+        gen_args.update(commonsense_dialog_data_config)
     
-    # decoding args
+    # basic decoding args
     if args.greedy:
         gen_args.update(greedy_config)        
     else:
         gen_args.update(baseline_config)
     
     # experiment-specific args
+    # note: it's possible to pass multiple experiment ids separated by '+', e.g. --exp_id=xa_knowledge+qu_ctxt_aug5
     for exp_id in args.exp_id.split('+'):
-        gen_args.update(experiment_configs.get(exp_id, {}))
+        if args.dataset.lower() in ['tc', 'topical_chat']:
+            exp_config = tc_experiment_configs.get(exp_id, None)
+        elif args.dataset.lower() in ['cd', 'cs_dialogue']:
+            exp_config = cd_experiment_configs.get(exp_id, None)
+        
+        if exp_id != 'baseline':
+            if exp_config is not None:
+                gen_args.update(exp_config)
+            else:
+                raise ValueError(f'Invalid experiment id: {exp_id}')
     
     # debug args for test runs
     if args.debug:
@@ -158,14 +177,23 @@ if __name__ == "__main__":
 
             minor_start = time.time() # time scoring run
 
-            scored = score_kgd_generation(
-                outputs, 
-                targets=[[i] for i in predict_dataset['target']],
-                knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
-                dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
-                verbose=True if args.debug else False,
-                )
-            
+            if args.dataset.lower() in ['tc', 'topical_chat']:
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
+            elif args.dataset.lower() in ['cd', 'cs_dialogue']:
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=[[i] for i in predict_dataset['context']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
+                
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)
         

@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 
 def preprocess_topical_chat_dataset(examples, tokenizer, **kwargs):
     """
-    prepare knowledge-grounded dialogue data for training according to 
+    prepare knowledge-grounded or contextualised dialogue data for training according to 
     the description in Appendix A.1 in https://arxiv.org/abs/2106.06411
+
+    Note, we use the same preprocessing function for both knowledge-grounded (Topical-Chat)
+    and contextualised dialogue (CommonsenseDialogue) datasets. In the latter case, 
+    the 'knowledge' corresponds to the 'context' column.
     """
     
     # speaker ID tags are expected to look something like `<speaker1>`
@@ -95,38 +99,83 @@ def preprocess_topical_chat_dataset(examples, tokenizer, **kwargs):
         ]
 
     model_inputs["labels"] = labels["input_ids"]
+    
     return model_inputs
 
 def preprocess_function(examples, tokenizer, **kwargs):
     """
     Adapted from run_summarization.py
     
-    default preprocessing function for summarization datasets
+    basic preprocessing function that doesn't use knowledge snippets
     """
+
+    # raise NotImplementedError('This function is not implemented yet.')
+
+    # speaker ID tags are expected to look something like `<speaker1>`
+    # since these are not part of the model vocab, they get segmented
+    # so we accound for the additional tokens this creates by adding 
+    # a constant to data_args.history_bucket_size
+    speaker_id_tok = tokenizer(kwargs['speaker_id_tag'], add_special_tokens=False, return_length=True)
+    speaker_id_tok_len = speaker_id_tok['length'][0]
+
     # remove pairs where at least one record is None
     inputs, targets = [], []
-    for i in range(len(examples[text_column])):
-        if examples[text_column][i] and examples[summary_column][i]:
-            if isinstance(examples[text_column][i], list):
-                inputs.append(' '.join(examples[text_column][i]))
-            else:
-                inputs.append(examples[text_column][i])
-            targets.append(examples[summary_column][i])
+    for i in range(len(examples[kwargs['text_column']])):
+        if examples[kwargs['text_column']][i] and examples[kwargs['summary_column']][i]:
+            
+            # tokenize **each** turn and pad/truncate to length of  bucket length
+            turns_tok = [tokenizer(
+                turn, 
+                max_length=kwargs['history_bucket_size'] + speaker_id_tok_len, 
+                padding='max_length', 
+                truncation=True, 
+                add_special_tokens=False)['input_ids'] for turn in examples[kwargs['text_column']][i]]
 
-    inputs = [prefix + inp for inp in inputs]
-    model_inputs = tokenizer(inputs, max_length=data_args.max_source_length, padding=padding, truncation=True)
+            turns_tok = [tok_seq for turn_tok in turns_tok for tok_seq in turn_tok] # flatten
+            input_tok = turns_tok # prepend knowledge sequence to dialogue history
+            inputs.append(input_tok)
+    
+            target_text = examples[kwargs['summary_column']][i]
+            if target_text.startswith(kwargs['speaker_id_tag'][:5]):
+                target_text = target_text[len(kwargs['speaker_id_tag']):].strip() # remove speaker tag from target
+
+            target_tok = tokenizer(
+                target_text, 
+                max_length=kwargs['max_target_length'], 
+                truncation=True, 
+                add_special_tokens=True)['input_ids']
+            targets.append(target_tok)
+
+    if kwargs['source_prefix']: # will skip if None or empty string
+        prefix_tok = tokenizer(kwargs['source_prefix'], add_special_tokens=False)['input_ids']
+        inputs = [prefix_tok + inp_tok for inp_tok in inputs]
+
+    # add bos and eos tokens to input sequence
+    if tokenizer.bos_token_id is not None: # use bos token if the model has one, otherwise use eos (T5 doesn't have bos)
+        inputs = [[tokenizer.bos_token_id] + inp_tok for inp_tok in inputs]
+    elif tokenizer.eos_token_id is not None:
+        inputs = [[tokenizer.eos_token_id] + inp_tok for inp_tok in inputs]
+    else: # if neither bos nor eos is available, use the CLS token as bos following BERT convention (required for MASS model)
+        inputs = [[tokenizer.cls_token_id] + inp_tok for inp_tok in inputs]
+
+    model_inputs = tokenizer.prepare_for_model(inputs, add_special_tokens=False)
+
     # Setup the tokenizer for targets
     with tokenizer.as_target_tokenizer():
-        labels = tokenizer(targets, max_length=max_target_length, padding=padding, truncation=True)
+        # NOTE this is somewhat unneccessary, but it is closer to the original code...
+        labels = tokenizer.prepare_for_model(targets, add_special_tokens=False)
 
     # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
     # padding in the loss.
-    if padding == "max_length" and data_args.ignore_pad_token_for_loss:
+    if kwargs['pad_to_max_length'] and kwargs['ignore_pad_token_for_loss']:
         labels["input_ids"] = [
             [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
         ]
+
     model_inputs["labels"] = labels["input_ids"]
+    
     return model_inputs
+
 
 def load_data(model_args, data_args, training_args):
     """    
@@ -215,7 +264,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
             )
 
     # For KDG with topical-chat
-    if data_args.knowledge_column is not None:
+    if data_args.knowledge_column not in [None, 'none']:
         knowledge_column = data_args.knowledge_column
         if knowledge_column not in column_names:
             raise ValueError(
@@ -240,7 +289,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
         with training_args.main_process_first(desc="train dataset map pre-processing"):
-            if data_args.knowledge_column is not None:
+            if data_args.knowledge_column not in [None, 'none']:
                 train_dataset = train_dataset.map(
                     preprocess_topical_chat_dataset,
                     batched=True,
@@ -261,6 +310,10 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
                     # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on train dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
                 
 
@@ -279,7 +332,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
             max_eval_samples = min(len(eval_dataset), data_args.max_eval_samples)
             eval_dataset = eval_dataset.select(range(max_eval_samples))
         with training_args.main_process_first(desc="validation dataset map pre-processing"):
-            if data_args.knowledge_column is not None:
+            if data_args.knowledge_column not in [None, 'none']:
                 eval_dataset = eval_dataset.map(
                     preprocess_topical_chat_dataset,
                     batched=True,
@@ -300,6 +353,10 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
                     # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on validation dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
 
     if training_args.do_predict:
@@ -317,7 +374,7 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
             max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
         with training_args.main_process_first(desc="prediction dataset map pre-processing"):
-            if data_args.knowledge_column is not None:
+            if data_args.knowledge_column not in [None, 'none']:
                 predict_dataset = predict_dataset.map(
                     preprocess_topical_chat_dataset,
                     batched=True,
@@ -338,6 +395,10 @@ def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logg
                     # remove_columns=column_names,
                     load_from_cache_file=not data_args.overwrite_cache,
                     desc="Running tokenizer on prediction dataset",
+                    fn_kwargs={
+                        'tokenizer': tokenizer,
+                        **data_args.__dict__,
+                    },
                 )
 
     if training_args.do_train and data_args.persist_datasets:

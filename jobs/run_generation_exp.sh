@@ -11,7 +11,7 @@
 
 # Example Call:
 #       sbatch jobs/run_generation_exp.sh \
-#           -m resources/models/seed_23/ft/bart_base/ \
+#           -m resources/models/seed_23/TC/ft/bart_base/ \
 #           -d resources/data/Topical-Chat/KGD/test_freq.json
 
 # NOTE: the output dir is inferred from the model path and the dataset path
@@ -27,14 +27,13 @@
 #######################################################################
 
 repo_base='/data/tkew/projects/unsup_ctrl/'
-dataset="resources/data/Topical-Chat/KGD/test_freq.json"
 batch_size=120
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -m model_path [-r repo_base] [-e exp_id] [-o output_dir] [-d dataset] [-b batch_size]"
+    >&2 echo "$script -m model_path -t test_file -d dataset [-r repo_base] [-e exp_id] [-o output_dir] [-b batch_size]"
 }
 
 # missing arguments that are required
@@ -46,13 +45,14 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:e:b:o:d:" flag; do
+while getopts "r:m:e:b:o:d:t:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
     e) exp_id="$OPTARG" ;;
     b) batch_size="$OPTARG" ;;
     o) output_dir="$OPTARG" ;;
+    t) test_file="$OPTARG" ;;
     d) dataset="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
@@ -70,6 +70,15 @@ if [[ -z $model_path ]]; then
     exit 1
 fi
 
+if [[ -z $test_file ]]; then
+    print_missing_arg "[-t test_file]" "test file"
+    exit 1
+fi
+
+if [[ -z $dataset ]]; then
+    print_missing_arg "[-d dataset]" "dataset"
+    exit 1
+fi
 # if [[ -z $output_dir ]]; then
 #     print_missing_arg "[-o output_dir]" "output dir for results csv files"
 #     exit 1
@@ -90,7 +99,7 @@ source $repo_base/jobs/job_utils.sh # for infer_output_path
 #######################################################################
 
 if [[ -z $output_dir ]]; then
-    output_dir=$(infer_output_path $model_path $dataset)
+    output_dir=$(infer_output_path $model_path $test_file)
     [[ -z $output_dir ]] && echo "ERROR: Could not infer output dir. Please provide one with -o" && exit 1 # exit if output dir is empty
     echo "INFERRED OUTPUT DIR:" $output_dir
 fi
@@ -102,19 +111,21 @@ if [[ -z $exp_id ]]; then
     # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_management_ctxt_aug5" "hedging_evasion_ctxt_aug5" "e_words_ctxt_aug5" "d_words_ctxt_aug5" "i_words_ctxt_aug5" "n_words_ctxt_aug5"; do
     
     # # SBATCH --time=14:00:00
-    for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5"; do
+    # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5"; do
+
+    for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "qu_ctxt_aug10_50" "qu_ctxt_aug10_100"; do
 
     # # SBATCH --time=3:00:00
     # for exp_id in "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5"; do
 
         echo "Running experiment $exp_id"
         echo "Batch size: $batch_size"
-        python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --dataset "$dataset"
+        python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --test_file "$test_file" --dataset "$dataset"
     done
 else
     echo "Running experiment $exp_id"
     echo "Batch size: $batch_size"
-    python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --dataset "$dataset"
+    python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --test_file "$test_file" --dataset "$dataset"
 fi
 
 echo ""

@@ -17,7 +17,7 @@
 #######################################################################
 
 repo_base='/data/tkew/projects/unsup_ctrl/'
-dataset="resources/data/Topical-Chat/KGD/test_freq.json"
+test_file="resources/data/Topical-Chat/KGD/test_freq.json"
 batch_size=120
 
 
@@ -25,7 +25,7 @@ batch_size=120
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -m model_path [-r repo_base] [-b batch_size] [-d dataset] [-o output_dir]"
+    >&2 echo "$script -m model_path [-r repo_base] [-b batch_size] [-d dataset] [-o output_dir] [-t test_file]"
 }
 
 # missing arguments that are required
@@ -37,13 +37,14 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:b:o:d:" flag; do
+while getopts "r:m:b:o:d:t:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
     b) batch_size="$OPTARG" ;;
     o) output_dir="$OPTARG" ;;
     d) dataset="$OPTARG" ;;
+    t) test_file="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -82,7 +83,7 @@ source $repo_base/start.sh
 # this is duplicated in job_utils.sh, but importing it causes issues with sbatch and sbatch array jobs.
 infer_output_path() {
     model_path="$1"
-    dataset_path="$2"
+    test_file="$2"
 
     # Extract the model name from the model path
     model_name=$(basename "$model_path")
@@ -94,23 +95,22 @@ infer_output_path() {
     fi
 
     # Extract the dataset name from the dataset path
-    dataset_name=$(basename "$dataset_path" | cut -d'.' -f1)
-
+    test_file_id=$(basename "$test_file" | cut -d'.' -f1) # test_freq, test_rare or test
+    dataset=$(echo "$test_file" | cut -d'/' -f 4) # KGD or CD
     seed=$(echo "$model_path" | cut -d'/' -f3 | cut -d'_' -f2)
 
     # Construct the output path
-    output_path="resources/models/seed_${seed}/results/topchat_kgd_${dataset_name}-${model_type}"
+    output_path="resources/models/seed_${seed}/${dataset}/results/${test_file_id}-${model_type}"
 
     echo "$output_path"
 }
-
 
 #######################################################################
 # LAUNCH EXPERIMENT
 #######################################################################
 
 if [[ -z $output_dir ]]; then
-    output_dir=$(infer_output_path $model_path $dataset)
+    output_dir=$(infer_output_path $model_path $test_file)
     [[ -z $output_dir ]] && echo "ERROR: Could not infer output dir. Please provide one with -o" && exit 1 # exit if output dir is empty
     echo "INFERRED OUTPUT DIR:" $output_dir
 fi
@@ -137,6 +137,7 @@ srun python generation_exp.py \
     --model_dir "$model_path" \
     --output_dir "$output_dir" \
     --dataset "$dataset" \
+    --test_file "$test_file" \
     --batch_size "$batch_size" \
     --exp_id "${exp_ids[$SLURM_ARRAY_TASK_ID]}"
 
