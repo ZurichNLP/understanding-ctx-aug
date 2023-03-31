@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --qos=vesta
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --array=0-9
 #SBATCH --output=%j.out
 
@@ -15,7 +15,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+repo_base='/data/tkew/projects/unsup_ctrl/'
 dataset="resources/data/Topical-Chat/KGD/valid_freq.json"
 batch_size=120
 max_predict_samples=0.2

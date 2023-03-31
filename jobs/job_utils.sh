@@ -91,3 +91,26 @@ parse_denoising_args_to_string() {
     echo "$d_args"
 }
 
+infer_output_path() {
+    model_path="$1"
+    dataset_path="$2"
+
+    # Extract the model name from the model path
+    model_name=$(basename "$model_path")
+    echo "$model_name"
+    if [[ "$model_name" == "bart_small"* ]]; then
+        model_type="bart_small"
+    else
+        model_type="public_models"
+    fi
+
+    # Extract the dataset name from the dataset path
+    dataset_name=$(basename "$dataset_path" | cut -d'.' -f1)
+
+    seed=$(echo "$model_path" | cut -d'/' -f3 | cut -d'_' -f2)
+
+    # Construct the output path
+    output_path="resources/models/seed_${seed}/results/topchat_kgd_${dataset_name}-${model_type}"
+
+    echo "$output_path"
+}

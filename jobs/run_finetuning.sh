@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -14,7 +14,7 @@
 #######################################################################
 
 # defaults
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False

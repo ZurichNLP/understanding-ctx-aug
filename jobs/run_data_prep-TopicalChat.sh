@@ -14,7 +14,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+repo_base='/data/tkew/projects/unsup_ctrl/'
 
 # arguments that are not supported
 print_usage() {

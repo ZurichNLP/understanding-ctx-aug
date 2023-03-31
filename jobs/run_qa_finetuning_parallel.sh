@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --array=0-2
 #SBATCH --output=%j.out
 
@@ -20,7 +20,7 @@
 #######################################################################
 
 # defaults
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 SEEDS=(23 42 1984)
 
 # arguments that are not supported

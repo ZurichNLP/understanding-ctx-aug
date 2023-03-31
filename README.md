@@ -230,6 +230,17 @@ To run a new experiment (i.e. all seeded generation runs), you can define a new 
 To avoid errors with post-hoc evaluation (not always used), you should also add the name of the experiment and the relevant filepath ending in `eval.py`.
 
 
+## Updates due to server changes
+
+```
+Currently Loaded Modules:
+  1) anaconda3/2022.10         7) gcc/8.5.0
+  2) gpu                       8) libiconv/1.16-pdflaob  (H)
+  3) gmp/6.2.1-fggj7dy   (H)   9) xz/5.2.5-mhrz5su       (H)
+  4) mpfr/3.1.6-f4kuvds  (H)  10) libxml2/2.9.12-koohqap (H)
+  5) mpc/1.1.0-uxwarqk   (H)  11) cuda/10.2.89-mdadbss   (H)
+  6) zlib/1.2.12-j4b6zeg (H)  12) cudnn/10.2.89
+```
 
 ## TODO
 

@@ -4,7 +4,7 @@
 # example usage:
 # . jobs/run_mini_bart.sh -s 85 -c exp_configs/SI_t5.yml -s 1
 
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 

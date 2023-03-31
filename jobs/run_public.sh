@@ -6,7 +6,7 @@
 # example usage:
 # . jobs/run_public.sh -s 23 -m t5-small -f 1
 
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 SAVE_DIR_PREFIX="$BASE/resources/models"
@@ -73,8 +73,9 @@ source "$BASE/jobs/job_utils.sh"
 # # SLURM JOB ARGS
 # #######################################################################
 
-SLURM_ARGS_VOLTA="--qos=vesta --time=12:00:00 --gres gpu:1 --cpus-per-task 1 --mem-per-cpu=8G --partition=volta"
-SLURM_ARGS_VOLTA_LARGE="--qos=vesta --time=12:00:00 --gres gpu:Tesla-V100-32GB:1 --cpus-per-task 1 --mem-per-cpu=16G --partition=volta"
+SLURM_ARGS_VOLTA="--time=12:00:00 --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=8G --partition=lowprio"
+SLURM_ARGS_VOLTA_LARGE="--time=12:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G --partition=lowprio"
+
 
 # #######################################################################
 # # SET EXPERIMENT SETTINGS 
