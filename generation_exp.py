@@ -27,42 +27,7 @@ def set_args():
     ap.add_argument("--data_seed", type=int, default=0, help="random seed for the dataset split. We keep this fixed for all seeds to ensure that the same samples are used for all seeds")
     ap.add_argument("--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
     ap.add_argument("--greedy", action="store_true", help="whether or not to use greedy decoding")
-    ap.add_argument("--exp_id", required=False, default='baseline', 
-        choices=[
-            "baseline",
-            "xa_knowledge",
-            "xa_dialog",
-            "qu_ctxt_aug1",
-            "qu_ctxt_aug5",
-            "xa_knowledge+qu_ctxt_aug5",
-            "xa_dialog+qu_ctxt_aug5",
-            # "tagged_qu_ctxt_aug5", # for debugging
-            "pos_sent_ctxt_aug5",
-            "neg_sent_ctxt_aug5",
-            "long_pos_sent_ctxt_aug5",
-            "long_neg_sent_ctxt_aug5",
-            # "neu_sent_ctxt_aug5",
-            "single_qu_ctxt_aug5",
-            "single_pos_ctxt_aug5",
-            "short_qu_ctxt_aug5",
-            "ambig_qu_ctxt_aug5",
-            "ambig_excl_ctxt_aug5",
-            "excl_ctxt_aug5",
-            "hedging_contrast_ctxt_aug5",
-            "hedging_management_ctxt_aug5",
-            "hedging_evasion_ctxt_aug5",
-            "e_words_ctxt_aug5",
-            "d_words_ctxt_aug5",
-            "i_words_ctxt_aug5",
-            "n_words_ctxt_aug5",
-            # "cs-xa_knowledge",
-            # "cs-xa_dialog",
-            # "cs-qu_ctxt_aug5",
-            # "cs-single_qu_ctxt_aug5",
-            # "cs-qu_ctxt_aug1",
-        ],
-        help="experiment id"
-    )
+    ap.add_argument("--exp_id", required=False, default='baseline', help="experiment id")
     ap.add_argument("--debug", action="store_true", help="set for test runs")
 
     return ap.parse_args()
@@ -134,7 +99,7 @@ if __name__ == "__main__":
             exp_config = tc_experiment_configs.get(exp_id, None)
         elif args.dataset.lower() in ['cd', 'cs_dialogue']:
             exp_config = cd_experiment_configs.get(exp_id, None)
-        
+            gen_args.update({'beam_size': 1}) # reduce beam size for CD    
         if exp_id != 'baseline':
             if exp_config is not None:
                 gen_args.update(exp_config)
@@ -162,6 +127,7 @@ if __name__ == "__main__":
         
         m = InferenceModel(gen_args)
         predict_dataset = m.load_test_set_for_generation() # default: resources/data/Topical-Chat/KGD/test_freq.json
+        
         outputs = m.generate_KGD(predict_dataset)
         outputs = [o[0] for o in outputs] # take only the first output for each input (in case of multiple return sequences)
         

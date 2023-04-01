@@ -94,13 +94,13 @@ class InferenceModel:
             logger.info(f"Using {self.data_args.max_predict_samples} samples for testing!") 
             max_predict_samples = min(len(predict_dataset), self.data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
-
+        
         predict_dataset = predict_dataset.map(
             preprocess_topical_chat_dataset, # defined in data.py
             batched=True,
             num_proc=self.data_args.preprocessing_num_workers,
             load_from_cache_file=not self.data_args.overwrite_cache,
-            desc="Running tokenizer on train dataset",
+            desc="Running tokenizer on test dataset",
             fn_kwargs={
                 'tokenizer': self.tokenizer,
                 **self.data_args.__dict__,
@@ -183,9 +183,7 @@ class InferenceModel:
         
         outputs = []
         src_seqs = []
-        
         for pred_batch in tqdm(self.batch_for_generation(predict_dataset, self.gen_args.batch_size, context_code=context_code), total=len(predict_dataset) // self.gen_args.batch_size):
-            
             model_outputs = self.model.generate(
                 pred_batch['input_ids'], 
                 attention_mask=pred_batch['attention_mask'],

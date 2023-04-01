@@ -165,23 +165,31 @@ cd_experiment_configs = {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
+        "beam_size": 1,
     },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
         "max_context_examples": 10,
+        "beam_size": 1,
     },
     "qu_ctxt_aug10_50": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 10,
         "max_context_examples": 50,
+        "beam_size": 1,
     },
     "qu_ctxt_aug10_100": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 10,
         "max_context_examples": 100,
+        "beam_size": 1,
     },
-
+    "cd_dummy": {
+        "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 100,
+        "max_context_examples": 10,
+    },
     # "single_qu_ctxt_aug5": {
     #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
     #     "context_code_attention_bias_value": 5,
