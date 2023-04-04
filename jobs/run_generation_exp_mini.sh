@@ -30,7 +30,7 @@ batch_size=120
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -m model_path [-r repo_base] [-e exp_id] [-o output_dir] [-b batch_size] [-d dataset] [-t test_file]"
+    >&2 echo "$script -m model_path [-r repo_base] [-e exp_id] [-o output_dir] [-b batch_size] [-t test_file]"
 }
 
 # missing arguments that are required
@@ -42,14 +42,14 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:m:e:b:o:d:t:" flag; do
+while getopts "r:m:e:b:o:t:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
     m) model_path="$OPTARG" ;;
     e) exp_id="$OPTARG" ;;
     b) batch_size="$OPTARG" ;;
     o) output_dir="$OPTARG" ;;
-    d) dataset="$OPTARG" ;;
+    # d) dataset="$OPTARG" ;;
     t) test_file="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
@@ -92,9 +92,11 @@ if [[ -z $output_dir ]]; then
     echo "INFERRED OUTPUT DIR:" $output_dir
 fi
 
+dataset_id=$(infer_dataset_id $test_file)
+
 echo "Running experiment $exp_id"
 echo "Batch size: $batch_size"
-python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --test_file "$test_file" --dataset "$dataset"
+python generation_exp.py --model_dir "$model_path" --batch_size "$batch_size" --output_dir "$output_dir" --exp_id "$exp_id" --test_file "$test_file" --dataset "$dataset_id"
 
 echo ""
 echo "Done."

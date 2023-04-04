@@ -91,6 +91,14 @@ parse_denoising_args_to_string() {
     echo "$d_args"
 }
 
+# get KGD/TC, CD, DD from a path like resources/data/Commonsense-Dialogues/CD/...
+infer_dataset_id() {
+    data="$1"
+    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD/TC, CD, DD
+    echo "$dataset_id"
+}
+
+# output path for evaluation results
 infer_output_path() {
     model_path="$1"
     test_file="$2"
@@ -106,11 +114,25 @@ infer_output_path() {
 
     # Extract the dataset name from the dataset path
     test_file_id=$(basename "$test_file" | cut -d'.' -f1) # test_freq, test_rare or test
-    dataset=$(echo "$test_file" | cut -d'/' -f 4) # KGD or CD
+    dataset_id=$(infer_dataset_id $test_file)
     seed=$(echo "$model_path" | cut -d'/' -f3 | cut -d'_' -f2)
 
     # Construct the output path
-    output_path="resources/models/seed_${seed}/${dataset}/results/${test_file_id}-${model_type}"
+    output_path="resources/models/seed_${seed}/${dataset_id}/results/${test_file_id}-${model_type}"
 
     echo "$output_path"
+}
+
+# save path for fine-tuned model
+infer_save_path() {
+    seed="$1"
+    model_id="$2"
+    data_path="$3"
+
+    # dataset_id=$(echo "$data_path" | cut -d'/' -f 4) # e.g. KGD/TC, CD, DD
+    dataset_id=$(infer_dataset_id $data_path)
+
+    save_path="resources/models/seed_${seed}/${dataset_id}/ft"
+
+    echo "$save_path"
 }
