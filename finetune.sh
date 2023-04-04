@@ -39,15 +39,21 @@ echo -e "init_as_random:\t\t$init_as_random"
 echo ""
 
 if [[ $data_dir == *"Topical-Chat"* ]]; then
-    train_file="$data_dir/train.json"
+    train_file="$data_dir/train.json" # can also use train_39572.json for debugging
     validation_file="$data_dir/valid_freq.json"
     test_file="$data_dir/test_freq.json"
     knowledge_column="knowledge"
-elif [[ $data_dir == *""* ]]; then
+elif [[ $data_dir == *"Commonsense-Dialogues"* ]]; then
     train_file="$data_dir/train.json"
     validation_file="$data_dir/valid.json"
     test_file="$data_dir/test.json"
     knowledge_column="context"
+elif [[ $data_dir == *"DailyDialog"* ]]; then
+    train_file="$data_dir/train.json"
+    validation_file="$data_dir/valid.json"
+    test_file="$data_dir/test.json"
+    knowledge_column="none"
+
 else
     echo "Invalid data_dir: $data_dir" && exit 1
 fi

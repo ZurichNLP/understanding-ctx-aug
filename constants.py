@@ -10,6 +10,12 @@ commonsense_dialog_data_config = {
     "knowledge_column": "context",
 }
 
+daily_dialog_data_config = {
+    "text_column": "turns",
+    "summary_column": "target",
+    "knowledge_column": "none",
+}
+
 baseline_config = {
     "max_length": 40,
     "do_sample": True,
@@ -165,64 +171,63 @@ cd_experiment_configs = {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
-        "beam_size": 1,
     },
     "qu_ctxt_aug1": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
         "max_context_examples": 10,
-        "beam_size": 1,
     },
     "qu_ctxt_aug10_50": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 10,
         "max_context_examples": 50,
-        "beam_size": 1,
     },
     "qu_ctxt_aug10_100": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 10,
         "max_context_examples": 100,
-        "beam_size": 1,
     },
     "cd_dummy": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 100,
         "max_context_examples": 10,
     },
-    # "single_qu_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_questions.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 1,
+    "short_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/short_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+}
+
+dd_experiment_configs = {
+    "qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "qu_ctxt_aug1": {
+        "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 1,
+        "max_context_examples": 10,
+    },
+    "short_qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/short_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    # "qu_ctxt_aug10_50": {
+    #     "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+    #     "context_code_attention_bias_value": 10,
+    #     "max_context_examples": 50,
     # },
-    # "short_qu_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/short_questions.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 5,
+    # "qu_ctxt_aug10_100": {
+    #     "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+    #     "context_code_attention_bias_value": 10,
+    #     "max_context_examples": 100,
     # },
-    # "pos_sent_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/pos_sents.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 5,
-    # },
-    # "single_pos_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/pos_sents.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 1,
-    # },
-    # "neg_sent_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/neg_sents.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 5,
-    # },
-    # "long_pos_sent_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_pos_sents.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 10,
-    # },
-    # "long_neg_sent_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CD/contexts/train_neg_sents.txt",
-    #     "context_code_attention_bias_value": 5,
+    # "cd_dummy": {
+    #     "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+    #     "context_code_attention_bias_value": 100,
     #     "max_context_examples": 10,
     # },
 }

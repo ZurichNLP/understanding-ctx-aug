@@ -40,7 +40,11 @@ def load_corpus(corpus_file):
         # note: for commonsense, we also consider sentences from the context
         for turns in dataset_dict['train']['turns']:
             corpus_sents.extend(turn for turn in turns if turn != '')
-    print(len(corpus_sents))
+    elif 'dailydialog' in corpus_file.lower():
+        dataset_dict = load_dataset('json', data_files=corpus_file)
+        corpus_sents = dataset_dict['train']['target']
+
+    print(f'Corpus sentences: {len(corpus_sents)}')
 
     return corpus_sents
 

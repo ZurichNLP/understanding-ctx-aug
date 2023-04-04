@@ -104,22 +104,22 @@ class DataTrainingArguments:
 
     knowledge_column: Optional[str] = field(
         default=None,
-        metadata={"help": "The name of the column in the datasets containing the knowledge snippet (for knowledge-grounded dialogue gen)."},
+        metadata={"help": "The name of the column in the datasets containing the knowledge snippet (for knowledge-grounded dialog gen)."},
     )
 
     knowledge_bucket_size: Optional[int] = field(
         default=32,
-        metadata={"help": "The number of tokens in the knowledge bucket (for knowledge-grounded dialogue gen)."},
+        metadata={"help": "The number of tokens in the knowledge bucket (for knowledge-grounded dialog gen)."},
     )
 
     history_bucket_size: Optional[int] = field(
         default=25,
-        metadata={"help": "The number of tokens in the history bucket (for knowledge-grounded dialogue gen)."},
+        metadata={"help": "The number of tokens in the history bucket (for knowledge-grounded dialog gen)."},
     )
 
     speaker_id_tag: Optional[str] = field(
         default='<speaker1>',
-        metadata={"help": "The tag used to indicate the speaker in the knowledge column (for knowledge-grounded dialogue gen)."},
+        metadata={"help": "The tag used to indicate the speaker in the knowledge column (for knowledge-grounded dialog gen)."},
     )
 
     project_name: Optional[str] = field(

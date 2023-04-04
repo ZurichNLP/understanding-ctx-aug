@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 def preprocess_topical_chat_dataset(examples, tokenizer, **kwargs):
     """
-    prepare knowledge-grounded or contextualised dialogue data for training according to 
+    prepare knowledge-grounded or contextualised dialog data for training according to 
     the description in Appendix A.1 in https://arxiv.org/abs/2106.06411
 
     Note, we use the same preprocessing function for both knowledge-grounded (Topical-Chat)
-    and contextualised dialogue (CommonsenseDialogue) datasets. In the latter case, 
+    and contextualised dialog (CommonsenseDialogue) datasets. In the latter case, 
     the 'knowledge' corresponds to the 'context' column.
     """
     
@@ -58,7 +58,7 @@ def preprocess_topical_chat_dataset(examples, tokenizer, **kwargs):
                 add_special_tokens=False)['input_ids'] for turn in examples[kwargs['text_column']][i]]
 
             turns_tok = [tok_seq for turn_tok in turns_tok for tok_seq in turn_tok] # flatten
-            input_tok = knowledge_tok + turns_tok # prepend knowledge sequence to dialogue history
+            input_tok = knowledge_tok + turns_tok # prepend knowledge sequence to dialog history
             inputs.append(input_tok)
     
             target_text = examples[kwargs['summary_column']][i]
@@ -106,11 +106,9 @@ def preprocess_function(examples, tokenizer, **kwargs):
     """
     Adapted from run_summarization.py
     
-    basic preprocessing function that doesn't use knowledge snippets
+    Basic preprocessing function that doesn't use knowledge snippets.
+    Used for processing DailyDialog.
     """
-
-    # raise NotImplementedError('This function is not implemented yet.')
-
     # speaker ID tags are expected to look something like `<speaker1>`
     # since these are not part of the model vocab, they get segmented
     # so we accound for the additional tokens this creates by adding 
@@ -132,7 +130,7 @@ def preprocess_function(examples, tokenizer, **kwargs):
                 add_special_tokens=False)['input_ids'] for turn in examples[kwargs['text_column']][i]]
 
             turns_tok = [tok_seq for turn_tok in turns_tok for tok_seq in turn_tok] # flatten
-            input_tok = turns_tok # prepend knowledge sequence to dialogue history
+            input_tok = turns_tok # prepend knowledge sequence to dialog history
             inputs.append(input_tok)
     
             target_text = examples[kwargs['summary_column']][i]

@@ -19,7 +19,7 @@ from transformers import (
     set_seed,
 )
 
-from data import preprocess_topical_chat_dataset
+from data import preprocess_topical_chat_dataset, preprocess_function
 from hf_args import InferenceArguments, DataTrainingArguments, ModelArguments
 
 # Setup logging
@@ -95,17 +95,38 @@ class InferenceModel:
             max_predict_samples = min(len(predict_dataset), self.data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
         
-        predict_dataset = predict_dataset.map(
-            preprocess_topical_chat_dataset, # defined in data.py
-            batched=True,
-            num_proc=self.data_args.preprocessing_num_workers,
-            load_from_cache_file=not self.data_args.overwrite_cache,
-            desc="Running tokenizer on test dataset",
-            fn_kwargs={
-                'tokenizer': self.tokenizer,
-                **self.data_args.__dict__,
-            },
-        )
+        # infer whether the dataset has knowledge and context to run the appropriate pre-processing
+        has_knowledge = False
+        has_context = False
+        if 'knowledge' in predict_dataset.features:
+            has_knowledge = any(text for text in predict_dataset['knowledge'])
+        if 'context' in predict_dataset.features:
+            has_context = any(text for text in predict_dataset['context'])
+        
+        if has_knowledge or has_context:
+            predict_dataset = predict_dataset.map(
+                preprocess_topical_chat_dataset, # defined in data.py
+                batched=True,
+                num_proc=self.data_args.preprocessing_num_workers,
+                load_from_cache_file=not self.data_args.overwrite_cache,
+                desc="Running tokenizer on test dataset",
+                fn_kwargs={
+                    'tokenizer': self.tokenizer,
+                    **self.data_args.__dict__,
+                },
+            )
+        else:
+            predict_dataset = predict_dataset.map(
+                preprocess_function, # defined in data.py
+                batched=True,
+                num_proc=self.data_args.preprocessing_num_workers,
+                load_from_cache_file=not self.data_args.overwrite_cache,
+                desc="Running tokenizer on test dataset",
+                fn_kwargs={
+                    'tokenizer': self.tokenizer,
+                    **self.data_args.__dict__,
+                },
+            )
         
         predict_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"], output_all_columns=True)
         
@@ -184,6 +205,7 @@ class InferenceModel:
         outputs = []
         src_seqs = []
         for pred_batch in tqdm(self.batch_for_generation(predict_dataset, self.gen_args.batch_size, context_code=context_code), total=len(predict_dataset) // self.gen_args.batch_size):
+            
             model_outputs = self.model.generate(
                 pred_batch['input_ids'], 
                 attention_mask=pred_batch['attention_mask'],

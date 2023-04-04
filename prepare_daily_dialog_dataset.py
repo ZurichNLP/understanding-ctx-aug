@@ -11,7 +11,12 @@ import random
 from tqdm import tqdm
 import re
 from transformers import AutoTokenizer
+from datasets import load_dataset
+from sacremoses import MosesDetokenizer, MosesPunctNormalizer
 
+
+mpn = MosesPunctNormalizer()
+md = MosesDetokenizer(lang="en")
 
 @dataclass
 class dialog_instance:
@@ -20,7 +25,7 @@ class dialog_instance:
     target: str
 
 
-class CommonSenseDialogDataset:
+class DailyDialogDataset:
     
     def __init__(self, data_dir: str, split: str, verbose: bool = False):
         
@@ -29,23 +34,17 @@ class CommonSenseDialogDataset:
         self.seed = 42 # for reproducibility
         self.verbose = verbose
 
-        self.annotated_dialogs = self._load_json(Path(data_dir) / f'{split}.json')
-                
+        self.dialogs = load_dataset('daily_dialog', split=self.split, data_dir=self.data_dir)['dialog']
+        
     def _load_json(self, file: Union[Path, str]) -> Dict:
         with open(file) as f:
             return json.load(f)
 
-    def extract_dialog(self, dialog_id: str, history_length: int = 5, verbose: bool = False) -> List:
+    def extract_dialog(self, dialog: List[str], history_length: int = 5, verbose: bool = False) -> List:
         """
         extract all contextualised source-target sequence pairs from a given dialog.
         """
-        # breakpoint()        
-        dialog = self.annotated_dialogs[dialog_id]['turns']
-        context = self.annotated_dialogs[dialog_id]['context']
-
-        # if len(dialog) != 6:
-        #     print(f'Warning: dialog {dialog_id} has {len(dialog)} turns, expected 6!')
-
+                
         src_tgt_pairs = []
         current_dialog = []
         
@@ -61,7 +60,7 @@ class CommonSenseDialogDataset:
 
                 di = dialog_instance(
                     turns = self.normalize_whitespace(current_dialog[:-1]), 
-                    context = self.normalize_whitespace(context), 
+                    context = '', 
                     target = self.normalize_whitespace(current_dialog[-1])
                     )
 
@@ -79,18 +78,18 @@ class CommonSenseDialogDataset:
 
                 di = dialog_instance(
                     turns = self.normalize_whitespace(current_dialog[:-1]), 
-                    context = self.normalize_whitespace(context), 
+                    context = '', 
                     target = self.normalize_whitespace(current_dialog[-1])
                     )
 
                 src_tgt_pairs.append(di)
-                
+        # breakpoint()    
         return src_tgt_pairs
 
     def get_all_dialogs(self, history_length: int = 5, verbose: bool = False) -> List:
         all_dialogs = []
-        for dialog_id in self.annotated_dialogs.keys():
-            all_dialogs.extend(self.extract_dialog(dialog_id, history_length=history_length, verbose=verbose))
+        for dialog in self.dialogs:
+            all_dialogs.extend(self.extract_dialog(dialog, history_length=history_length, verbose=verbose))
         
         print(f'Extracted {len(all_dialogs)} contextualised grounded dialogs!')
             
@@ -101,6 +100,7 @@ class CommonSenseDialogDataset:
         if not Path(save_dir).exists():
             Path(save_dir).mkdir(parents=True)
 
+        self.split = 'valid' if self.split == 'validation' else self.split
         output_file = Path(save_dir) / f'{self.split}.json' # files are jsonl format
 
         if shuffle:
@@ -117,12 +117,19 @@ class CommonSenseDialogDataset:
     
     @staticmethod
     def normalize_whitespace(text: Union[List, str]) -> Union[List, str]:
-    
+
+        def normalize_punct(text):
+            return mpn.normalize(text)
+
+        def detok(text):
+            return md.detokenize(text.split())
+
         def clean_string(string: str) -> str:
+            string = detok(normalize_punct(string))
             string = re.sub(r'\n', ' ', string)
             string = re.sub(r'\s+', ' ', string)
             return string.strip()
-
+        
         if isinstance(text, list):
             return [clean_string(string) for string in text]
         else:
@@ -176,7 +183,7 @@ class CommonSenseDialogDataset:
 def set_args():
     ap = argparse.ArgumentParser()
     
-    ap.add_argument('--data_dir', type=str, required=True, help='path to data directory')
+    ap.add_argument('--data_dir', type=str, required=False, help='path to data directory')
     ap.add_argument('--split', type=str, default='train', help='train, valid, or test')
     ap.add_argument('--history_length', type=int, default=5, help='number of turns that make up the source sequence dialog history')
     ap.add_argument('--context_length', type=int, default=1, help='number of context snippets to use for dialog grounding')
@@ -187,7 +194,7 @@ def set_args():
     
     ap.add_argument('--verbose', action='store_true', help='print out debug information')
     ap.add_argument('--save_dir', type=str, default='KGD', help='path to save directory')
-    
+
     return ap.parse_args()
 
 
@@ -195,17 +202,16 @@ if __name__ == "__main__":
 
     args = set_args()
 
-    cd = CommonSenseDialogDataset(args.data_dir, args.split, args.verbose)
+    dd = DailyDialogDataset(args.data_dir, args.split, args.verbose)
 
-    dialogs = cd.get_all_dialogs()
-    # breakpoint()
-    cd.write_to_file(dialogs, args.save_dir)
+    dialogs = dd.get_all_dialogs()
+    dd.write_to_file(dialogs, args.save_dir)
     
-    # # tokenize inputs according to description in the paper
-    # tc.tokenize_dialogs(dialogs, tokenizer=args.tokenizer, 
-    #     history_bucket_size=args.history_bucket_size, 
-    #     context_bucket_size=args.context_bucket_size,
-    #     split=args.split, 
-    #     save_dir=args.save_dir, 
-    #     verbose=args.verbose)
+    # # # tokenize inputs according to description in the paper
+    # # dd.tokenize_dialogs(dialogs, tokenizer=args.tokenizer, 
+    # #     history_bucket_size=args.history_bucket_size, 
+    # #     context_bucket_size=args.context_bucket_size,
+    # #     split=args.split, 
+    # #     save_dir=args.save_dir, 
+    # #     verbose=args.verbose)
     
