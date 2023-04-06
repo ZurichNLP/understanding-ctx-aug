@@ -31,7 +31,7 @@ def parse_file_name(file_name: Path):
 
 if __name__ == '__main__':
 
-    tgt_model, tgt_dir = sys.argv[1:] # e.g. test_freq-bart_small
+    tgt_model, tgt_dir = sys.argv[1:] # e.g. TC test_freq-public_models
     
     seeds = [23, 42, 1984]
 
@@ -42,7 +42,9 @@ if __name__ == '__main__':
         experiments = list(tc_experiment_configs.keys())
     elif tgt_model == 'CD':
         experiments = list(cd_experiment_configs.keys())
-    
+    elif tgt_model == 'DD':
+        experiments = list(dd_experiment_configs.keys())
+
     experiments.insert(0, 'baseline')
 
     summary = {}
@@ -67,18 +69,18 @@ if __name__ == '__main__':
                 max_lines = summary[experiment][parse_file_name(f)]
                 col_width = max(col_width, len(parse_file_name(f)))
 
-        print(f'All files: {expected_files}\n')
+        print(f'Models: {expected_files}\n')
 
         for experiment in summary:
 
             if len(summary[experiment]) < len(expected_files):
                 print(
-                    f'{bcolors.ENDC}{experiment:{col_width+ 8}}{bcolors.ENDC}\t\t' \
+                    f'{bcolors.UNDERLINE}{experiment:{col_width+ 8}}{bcolors.ENDC}\t\t' \
                     f'{bcolors.WARNING}Missing {len(expected_files) - len(summary[experiment])} models: {bcolors.ENDC}' \
                     f'{bcolors.ENDC} {", ".join(list(expected_files - set(summary[experiment].keys())))} {bcolors.ENDC}'
                     )    
             else:
-                print(f'{bcolors.UNDERLINE}{experiment:{col_width + 8}}{bcolors.ENDC}\t\t{bcolors.OKGREEN}Has all models{bcolors.ENDC}')
+                print(f'{bcolors.ENDC}{experiment:{col_width + 8}}{bcolors.ENDC}\t\t{bcolors.OKGREEN}Has all models{bcolors.ENDC}')
 
             for exp_id, lines in summary[experiment].items():
                 if lines != max_lines:

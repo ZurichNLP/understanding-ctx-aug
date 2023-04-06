@@ -124,15 +124,12 @@ infer_output_path() {
 }
 
 # save path for fine-tuned model
-infer_save_path() {
+infer_model_path() {
     seed="$1"
-    model_id="$2"
-    data_path="$3"
-
-    # dataset_id=$(echo "$data_path" | cut -d'/' -f 4) # e.g. KGD/TC, CD, DD
-    dataset_id=$(infer_dataset_id $data_path)
-
-    save_path="resources/models/seed_${seed}/${dataset_id}/ft"
+    dataset_id="$2"
+    model_id="$3"
+    
+    save_path="resources/models/seed_${seed}/${dataset_id}/ft/${model_id}"
 
     echo "$save_path"
 }

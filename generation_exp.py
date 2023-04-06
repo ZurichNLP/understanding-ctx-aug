@@ -18,7 +18,7 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
     ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if required")
-    ap.add_argument("--dataset", type=str, required=False, default="tc", choices=["tc", "topical_chat", "cd", "cs_dialog", "dd", "daily_dialog"], help="dataset type")
+    ap.add_argument("--dataset", type=str, required=False, default="tc", help="dataset type")
     ap.add_argument("--test_file", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
     ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")

@@ -78,9 +78,8 @@ source "$BASE/jobs/job_utils.sh"
 # # SLURM JOB ARGS
 # #######################################################################
 
-SLURM_ARGS_VOLTA="--time=12:00:00 --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=8G --partition=lowprio"
-SLURM_ARGS_VOLTA_LARGE="--time=12:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G --partition=lowprio"
-
+# SLURM_ARGS_VOLTA="--time=12:00:00 --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=8G --partition=lowprio"
+# SLURM_ARGS_VOLTA_LARGE="--time=12:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G --partition=lowprio"
 
 # #######################################################################
 # # SET EXPERIMENT SETTINGS 
@@ -137,21 +136,22 @@ case $DATA_DIR in
     ;;
 esac
 
-FINETUNE_SAVE_DIR=$(infer_save_path $SEED $MODEL_ID $DATA_DIR)
-RESULTS_DIR=$(infer_output_path $FINETUNE_SAVE_DIR $TEST_SET)
-LOG_DIR="$FINETUNE_SAVE_DIR/../logs"
+DATASET_ID=$(infer_dataset_id $DATA_DIR)
+FINETUNED_MODEL_DIR=$(infer_model_path $SEED $DATASET_ID $MODEL_ID)
+RESULTS_DIR=$(infer_output_path $FINETUNED_MODEL_DIR $TEST_SET)
+LOG_DIR="$FINETUNED_MODEL_DIR/logs"
 
-echo "$FINETUNE_SAVE_DIR"
+echo "$FINETUNED_MODEL_DIR"
 echo "$LOG_DIR"
 
-#######################################################################
-# INIT LOGGING
-#######################################################################
+######################################################################
+INIT LOGGING
+######################################################################
 
 SLURM_DEFAULT_FILE_PATTERN="%j.out"
 SLURM_LOG_ARGS="-o $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN -e $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN"
 
-mkdir -p "$LOG_DIR" "$FINETUNE_SAVE_DIR"
+mkdir -p "$FINETUNED_MODEL_DIR" "$LOG_DIR"
 
 #######################################################################
 # LAUNCH EXPERIMENT
@@ -161,12 +161,14 @@ mkdir -p "$LOG_DIR" "$FINETUNE_SAVE_DIR"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 date | tee -a "$LOG_DIR/MAIN"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
+echo "SLURM_ARGS: $SLURM_ARGS_VOLTA_LARGE $SLURM_LOG_ARGS" | tee -a "$LOG_DIR/MAIN"
+echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 echo "BASE: $BASE" | tee -a "$LOG_DIR/MAIN"
 echo "SEED: $SEED" | tee -a "$LOG_DIR/MAIN"
 echo "HF_MODEL_NAME: $HF_MODEL_NAME" | tee -a "$LOG_DIR/MAIN"
 echo "MODEL_ID: $MODEL_ID" | tee -a "$LOG_DIR/MAIN"
 echo "DATA_DIR: $DATA_DIR" | tee -a "$LOG_DIR/MAIN"
-echo "FINETUNE_SAVE_DIR: $FINETUNE_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
+echo "FINETUNED_MODEL_DIR: $FINETUNED_MODEL_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "RESULTS_DIR: $RESULTS_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "TEST_SET: $TEST_SET" | tee -a "$LOG_DIR/MAIN"
 echo "LOG_DIR: $LOG_DIR" | tee -a "$LOG_DIR/MAIN"
@@ -175,10 +177,9 @@ echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 # run fine-tuning
 id_finetune=$(
     $BASE/jobs/sbatch_bare.sh \
-    $SLURM_ARGS_VOLTA_LARGE \
     $SLURM_LOG_ARGS \
     $BASE/jobs/run_finetuning.sh \
-    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED" -d "$DATA_DIR"
+    -i "$HF_MODEL_NAME" -o "$FINETUNED_MODEL_DIR" -s "$SEED" -d "$DATA_DIR"
 )
 
 echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DIR/MAIN"
@@ -187,10 +188,9 @@ echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DI
 id_generate=$(
     $BASE/jobs/sbatch_bare.sh \
     --dependency=afterok:$id_finetune \
-    $SLURM_ARGS_VOLTA_LARGE \
     $SLURM_LOG_ARGS \
     $BASE/jobs/run_generation_exp.sh \
-    -m "$FINETUNE_SAVE_DIR" -b 120 -t "$TEST_SET" -o "$RESULTS_DIR"
+    -m "$FINETUNED_MODEL_DIR" -b 120 -t "$TEST_SET" -o "$RESULTS_DIR"
 )
 
 echo "  id_generate: $id_generate | $LOG_DIR/$id_generate.out" | tee -a "$LOG_DIR/MAIN"

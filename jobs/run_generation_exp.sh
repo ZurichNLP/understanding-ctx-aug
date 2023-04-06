@@ -74,15 +74,6 @@ if [[ -z $test_file ]]; then
     exit 1
 fi
 
-if [[ -z $dataset ]]; then
-    print_missing_arg "[-d dataset]" "dataset"
-    exit 1
-fi
-# if [[ -z $output_dir ]]; then
-#     print_missing_arg "[-o output_dir]" "output dir for results csv files"
-#     exit 1
-# fi
-
 # cd to base dir
 cd "$repo_base" && echo $(pwd) || exit 1
 
@@ -104,6 +95,15 @@ if [[ -z $output_dir ]]; then
 fi
 
 dataset_id=$(infer_dataset_id $test_file)
+
+echo "#######################################################################"
+echo "RUNNING GENERATION EXPERIMENT"
+echo "MODEL:" $model_path
+echo "TEST FILE:" $test_file
+echo "OUTPUT DIR:" $output_dir
+echo "DATASET ID:" $dataset_id
+echo "BATCH SIZE:" $batch_size
+echo "#######################################################################"
 
 if [[ -z $exp_id ]]; then
     # for exp_id in "baseline" "xa_knowledge" "xa_dialog" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "xa_knowledge+qu_ctxt_aug5" "xa_dialog+qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_evasion_ctxt_aug5" "hedging_management_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5"; do
