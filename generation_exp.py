@@ -18,7 +18,7 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
     ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if required")
-    ap.add_argument("--dataset", type=str, required=False, default="tc", help="dataset type")
+    ap.add_argument("--dataset", type=str, required=False, default="kgd", help="dataset type")
     ap.add_argument("--test_file", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
     ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
@@ -81,9 +81,9 @@ if __name__ == "__main__":
         }
 
     # dataset-specific args
-    if args.dataset.lower() in ['tc', 'topical_chat']:
+    if args.dataset.lower() in ['kgd', 'topical_chat']:
         gen_args.update(topical_chat_data_config)
-    elif args.dataset.lower() in ['cd', 'cs_dialog']:
+    elif args.dataset.lower() in ['csd', 'cs_dialog']:
         gen_args.update(commonsense_dialog_data_config)
     elif args.dataset.lower() in ['dd', 'daily_dialog']:
         gen_args.update(daily_dialog_data_config)
@@ -97,10 +97,10 @@ if __name__ == "__main__":
     # experiment-specific args
     # note: it's possible to pass multiple experiment ids separated by '+', e.g. --exp_id=xa_knowledge+qu_ctxt_aug5
     for exp_id in args.exp_id.split('+'):
-        if args.dataset.lower() in ['tc', 'topical_chat']:
+        if args.dataset.lower() in ['kgd', 'topical_chat']:
             exp_config = tc_experiment_configs.get(exp_id, None)
-        elif args.dataset.lower() in ['cd', 'cs_dialog']:
-            exp_config = cd_experiment_configs.get(exp_id, None)
+        elif args.dataset.lower() in ['csd', 'cs_dialog']:
+            exp_config = csd_experiment_configs.get(exp_id, None)
             gen_args.update({'beam_size': 1}) # reduce beam size for CD    
         elif args.dataset.lower() in ['dd', 'daily_dialog']:
             exp_config = dd_experiment_configs.get(exp_id, None)
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
             minor_start = time.time() # time scoring run
 
-            if args.dataset.lower() in ['tc', 'topical_chat']:
+            if args.dataset.lower() in ['kgd', 'topical_chat']:
                 scored = score_kgd_generation(
                     outputs, 
                     targets=[[i] for i in predict_dataset['target']],
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                     dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
                     verbose=True if args.debug else False,
                     )
-            elif args.dataset.lower() in ['cd', 'cs_dialog']:
+            elif args.dataset.lower() in ['csd', 'cs_dialog']:
                 scored = score_kgd_generation(
                     outputs, 
                     targets=[[i] for i in predict_dataset['target']],

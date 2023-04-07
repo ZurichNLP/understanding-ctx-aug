@@ -65,7 +65,7 @@ source start.sh
 # LAUNCH JOB
 #######################################################################
 
-save_dir="$data_dir/../CD"
+save_dir="$data_dir/../CSD"
 for split in valid test train; do
     python prepare_commonsense_dialog_dataset.py \
         --data_dir "$data_dir" \

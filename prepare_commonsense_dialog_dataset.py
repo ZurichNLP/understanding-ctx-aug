@@ -195,11 +195,11 @@ if __name__ == "__main__":
 
     args = set_args()
 
-    cd = CommonSenseDialogDataset(args.data_dir, args.split, args.verbose)
+    csd = CommonSenseDialogDataset(args.data_dir, args.split, args.verbose)
 
-    dialogs = cd.get_all_dialogs()
+    dialogs = csd.get_all_dialogs()
     # breakpoint()
-    cd.write_to_file(dialogs, args.save_dir)
+    csd.write_to_file(dialogs, args.save_dir)
     
     # # tokenize inputs according to description in the paper
     # tc.tokenize_dialogs(dialogs, tokenizer=args.tokenizer, 

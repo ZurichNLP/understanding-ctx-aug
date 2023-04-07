@@ -81,10 +81,10 @@ source $repo_base/start.sh
 #######################################################################
 
 # these are duplicated in job_utils.sh, but importing it here causes issues with sbatch array jobs.
-# get KGD/TC, CD, DD from a path like resources/data/Commonsense-Dialogues/CD/...
+# get KGD, CSD, DD from a path like resources/data/Commonsense-Dialogues/CSD/...
 infer_dataset_id() {
     data="$1"
-    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD/TC, CD, DD
+    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD, CSD, DD
     echo "$dataset_id"
 }
 

@@ -125,7 +125,7 @@ case $DATA_DIR in
     "resources/data/DailyDialog/DD")
         TEST_SET="$DATA_DIR/test.json"
         ;;
-    "resources/data/Commonsense-Dialogues/CD")
+    "resources/data/Commonsense-Dialogues/CSD")
         TEST_SET="$DATA_DIR/test.json"
         ;;
     "resources/data/Topical-Chat/KGD")

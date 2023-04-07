@@ -4,7 +4,7 @@
 # Author: T. Kew
 
 # Example usage:
-#   python check_experiment_results.py TC test_freq-bart_small
+#   python check_experiment_results.py KGD test_freq-bart_small
 
 import sys
 from pathlib import Path
@@ -31,17 +31,17 @@ def parse_file_name(file_name: Path):
 
 if __name__ == '__main__':
 
-    tgt_model, tgt_dir = sys.argv[1:] # e.g. TC test_freq-public_models
+    tgt_model, tgt_dir = sys.argv[1:] # e.g. KGD test_freq-public_models
     
     seeds = [23, 42, 1984]
 
     # for seed in seeds:
     dirs_to_check = [f'resources/models/seed_{seed}/{tgt_model}/results' for seed in seeds]
 
-    if tgt_model == 'TC':
-        experiments = list(tc_experiment_configs.keys())
-    elif tgt_model == 'CD':
-        experiments = list(cd_experiment_configs.keys())
+    if tgt_model == 'KGD':
+        experiments = list(kgd_experiment_configs.keys())
+    elif tgt_model == 'CSD':
+        experiments = list(csd_experiment_configs.keys())
     elif tgt_model == 'DD':
         experiments = list(dd_experiment_configs.keys())
 

@@ -215,5 +215,4 @@ python evaluation/evaluation.py output_file [--references_file (e.g., test_freq.
 
 - Imports for evaluation/analysis scripts currently use a try/except hack for compatibility with jupyter notebooks
 - The bias profile used is fixed across all decoding timesteps (not gradual)
-- `TC` and `KGD` is not consistent everywhere.
 - Commands for generating all the different types of context example files are missing from this documentation.

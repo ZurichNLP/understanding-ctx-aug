@@ -91,10 +91,10 @@ parse_denoising_args_to_string() {
     echo "$d_args"
 }
 
-# get KGD/TC, CD, DD from a path like resources/data/Commonsense-Dialogues/CD/...
+# get KGD, CSD or DD from a path like resources/data/Commonsense-Dialogues/CSD/...
 infer_dataset_id() {
     data="$1"
-    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD/TC, CD, DD
+    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD, CSD, DD
     echo "$dataset_id"
 }
 
