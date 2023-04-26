@@ -2,8 +2,7 @@
 #SBATCH --time=6:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
-#SBATCH --gres=gpu:1
-#SBATCH --partition=lowprio
+#SBATCH --gres=gpu:V100:1
 #SBATCH --output=%j.out
 
 # Author: T. Kew

@@ -12,7 +12,7 @@
 # Example Call:
 #       sbatch jobs/run_generation_exp.sh \
 #           -m resources/models/seed_23/KGD/ft/bart_base/ \
-#           -d resources/data/Topical-Chat/KGD/test_freq.json
+#           -t resources/data/Topical-Chat/KGD/test_freq.json
 
 # NOTE: the output dir is inferred from the model path and the dataset path
 

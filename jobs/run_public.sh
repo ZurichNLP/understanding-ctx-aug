@@ -13,13 +13,13 @@ BASE='/data/tkew/projects/unsup_ctrl/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 SAVE_DIR_PREFIX="$BASE/resources/models"
-DATA_DIR="$SAVE_DIR_PREFIX/../data/Topical-Chat/KGD/"
+DATA_DIR="$BASE/resources/data/Topical-Chat/KGD/"
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script [-b base] [-s seed] [-m model] [-f force] -d [data_dir]"
+    >&2 echo "$script [-b base] [-s seed] -m model [-d data_dir] [-f force]"
 }
 
 # missing arguments that are required
@@ -59,6 +59,11 @@ if [[ -z $SEED ]]; then
     exit 1
 fi
 
+if [[ -z $DATA_DIR ]]; then
+    print_missing_arg "[-d DATA_DIR]" "data directory"
+    exit 1
+fi
+
 # cd to base dir
 cd "$BASE" && echo $(pwd) || exit 1
 
@@ -79,7 +84,7 @@ source "$BASE/jobs/job_utils.sh"
 # #######################################################################
 
 # SLURM_ARGS_VOLTA="--time=12:00:00 --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=8G --partition=lowprio"
-# SLURM_ARGS_VOLTA_LARGE="--time=12:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G --partition=lowprio"
+SLURM_ARGS_VOLTA_LARGE="--time=8:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G"
 
 # #######################################################################
 # # SET EXPERIMENT SETTINGS 
@@ -138,20 +143,17 @@ esac
 
 DATASET_ID=$(infer_dataset_id $DATA_DIR)
 FINETUNED_MODEL_DIR=$(infer_model_path $SEED $DATASET_ID $MODEL_ID)
-RESULTS_DIR=$(infer_output_path $FINETUNED_MODEL_DIR $TEST_SET)
 LOG_DIR="$FINETUNED_MODEL_DIR/logs"
+RESULTS_DIR=$(infer_output_path $FINETUNED_MODEL_DIR $TEST_SET)
 
-echo "$FINETUNED_MODEL_DIR"
-echo "$LOG_DIR"
+mkdir -p "$FINETUNED_MODEL_DIR" "$LOG_DIR" "$RESULTS_DIR"
 
 ######################################################################
-INIT LOGGING
+# INIT LOGGING
 ######################################################################
 
 SLURM_DEFAULT_FILE_PATTERN="%j.out"
 SLURM_LOG_ARGS="-o $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN -e $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN"
-
-mkdir -p "$FINETUNED_MODEL_DIR" "$LOG_DIR"
 
 #######################################################################
 # LAUNCH EXPERIMENT
@@ -162,7 +164,6 @@ echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 date | tee -a "$LOG_DIR/MAIN"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 echo "SLURM_ARGS: $SLURM_ARGS_VOLTA_LARGE $SLURM_LOG_ARGS" | tee -a "$LOG_DIR/MAIN"
-echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 echo "BASE: $BASE" | tee -a "$LOG_DIR/MAIN"
 echo "SEED: $SEED" | tee -a "$LOG_DIR/MAIN"
 echo "HF_MODEL_NAME: $HF_MODEL_NAME" | tee -a "$LOG_DIR/MAIN"
@@ -178,6 +179,7 @@ echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 id_finetune=$(
     $BASE/jobs/sbatch_bare.sh \
     $SLURM_LOG_ARGS \
+    $SLURM_ARGS_VOLTA_LARGE \
     $BASE/jobs/run_finetuning.sh \
     -i "$HF_MODEL_NAME" -o "$FINETUNED_MODEL_DIR" -s "$SEED" -d "$DATA_DIR"
 )
@@ -189,6 +191,7 @@ id_generate=$(
     $BASE/jobs/sbatch_bare.sh \
     --dependency=afterok:$id_finetune \
     $SLURM_LOG_ARGS \
+    $SLURM_ARGS_VOLTA_LARGE \
     $BASE/jobs/run_generation_exp.sh \
     -m "$FINETUNED_MODEL_DIR" -b 120 -t "$TEST_SET" -o "$RESULTS_DIR"
 )
