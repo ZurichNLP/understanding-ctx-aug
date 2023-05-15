@@ -1,22 +1,22 @@
-topical_chat_data_config = {
+TOPICAL_CHAT_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "knowledge",
 }
 
-commonsense_dialog_data_config = {
+COMMONSENSE_DIALOG_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "context",
 }
 
-daily_dialog_data_config = {
+DAILY_DIALOG_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "none",
 }
 
-baseline_config = {
+BASELINE_CONFIG = {
     "max_length": 40,
     "do_sample": True,
     "top_p": 0.9,
@@ -32,7 +32,7 @@ baseline_config = {
     "bias_profile": None,
 }
 
-greedy_config = {
+GREEDY_CONFIG = {
     "max_length": 40,
     "do_sample": False,
     "beam_size": 1,
@@ -40,14 +40,14 @@ greedy_config = {
     "write_to_file": "auto",
 }
 
-debug_config = {
+DEBUG_CONFIG = {
     "max_predict_samples": 5,
     "write_to_file": '',
     "verbose": True,
     "debug": True,
 }
 
-kgd_experiment_configs = {
+KGD_EXPERIMENT_CONFIGS = {
     "xa_knowledge": {
         "cross_attention_bias_value": 5,
         "bias_profile": "knowledge",
@@ -158,7 +158,7 @@ kgd_experiment_configs = {
     },
 }
 
-csd_experiment_configs = {
+CSD_EXPERIMENT_CONFIGS = {
     "xa_knowledge": {
         "cross_attention_bias_value": 5,
         "bias_profile": "knowledge",
@@ -199,7 +199,7 @@ csd_experiment_configs = {
     },
 }
 
-dd_experiment_configs = {
+DD_EXPERIMENT_CONFIGS = {
     "qu_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 5,

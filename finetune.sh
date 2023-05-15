@@ -36,10 +36,27 @@ echo -e "tie_encoder_decoder:\t$tie_encoder_decoder"
 echo -e "max_train_samples:\t$max_train_samples"
 echo -e "eval_runs_per_epoch:\t$eval_runs_per_epoch"
 echo -e "init_as_random:\t\t$init_as_random"
-echo ""
+
 
 if [[ $data_dir == *"Topical-Chat"* ]]; then
-    train_file="$data_dir/train.json" # can also use train_39572.json for debugging
+    # alternative training sets for for investigations
+    if [[ $save_dir == *"_sub" ]]; then
+        train_file="$data_dir/train_39572.json"
+    elif [[ $save_dir == *"_max0qus" ]]; then
+        train_file="$data_dir/train_max0qus.json"
+    elif [[ $save_dir == *"_max1qus" ]]; then
+        train_file="$data_dir/train_max1qus.json"
+    elif [[ $save_dir == *"_max2qus" ]]; then
+        train_file="$data_dir/train_max2qus.json"
+    elif [[ $save_dir == *"_max3qus" ]]; then
+        train_file="$data_dir/train_max3qus.json"
+    elif [[ $save_dir == *"_max4qus" ]]; then
+        train_file="$data_dir/train_max4qus.json"
+    elif [[ $save_dir == *"_max5qus" ]]; then
+        train_file="$data_dir/train_max5qus.json"
+    else
+        train_file="$data_dir/train.json"
+    fi
     validation_file="$data_dir/valid_freq.json"
     test_file="$data_dir/test_freq.json"
     knowledge_column="knowledge"
@@ -58,6 +75,14 @@ else
     echo "Invalid data_dir: $data_dir" && exit 1
 fi
 
+
+echo -e "train_file:\t\t$train_file"
+echo -e "validation_file:\t$validation_file"
+echo -e "test_file:\t\t$test_file"
+echo -e "knowledge_column:\t\t$knowledge_column"
+echo ""
+
+
 python finetune.py \
     --model_name_or_path "$model_name_or_path" \
     --output_dir "$save_dir" \
@@ -69,7 +94,7 @@ python finetune.py \
     --test_file "$test_file" \
     --text_column "turns" \
     --summary_column "target" \
-    --knowledge_column $knowledge_column \
+    --knowledge_column "$knowledge_column" \
     --overwrite_cache True \
     --preprocessing_num_workers 1 \
     --max_source_length 256 --max_target_length 64 \

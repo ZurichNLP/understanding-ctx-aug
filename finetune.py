@@ -335,6 +335,11 @@ def main():
 
     train_dataset, eval_dataset, predict_dataset = prepare_data_for_model(model_args, data_args, training_args, tokenizer, logger)
     
+    logger.info(f"train_dataset length: {len(train_dataset)}")
+    logger.info(f"eval_dataset length: {len(eval_dataset)}")
+    # if predict_dataset is not None:
+    #     logger.info(f"predict_dataset length: {len(predict_dataset)}")
+
     # Data collator
     label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
     data_collator = DataCollatorForSeq2Seq(

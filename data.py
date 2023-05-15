@@ -194,6 +194,7 @@ def load_data(model_args, data_args, training_args):
     
     if data_args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
+        logger.info(f"Loading data from {data_args.dataset_name}")
         raw_datasets = load_dataset(
             data_args.dataset_name,
             data_args.dataset_config_name,
@@ -203,12 +204,15 @@ def load_data(model_args, data_args, training_args):
     else:
         data_files = {}
         if data_args.train_file is not None:
+            logger.info(f"Loading training data from {data_args.train_file}")
             data_files["train"] = data_args.train_file
             extension = data_args.train_file.split(".")[-1]
         if data_args.validation_file is not None:
+            logger.info(f"Loading validation data from {data_args.validation_file}")
             data_files["validation"] = data_args.validation_file
             extension = data_args.validation_file.split(".")[-1]
         if data_args.test_file is not None:
+            logger.info(f"Loading test data from {data_args.test_file}")
             data_files["test"] = data_args.test_file
             extension = data_args.test_file.split(".")[-1]
         raw_datasets = load_dataset(
@@ -217,6 +221,7 @@ def load_data(model_args, data_args, training_args):
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+        logger.info(f'{raw_datasets}')
     return raw_datasets
 
 def prepare_data_for_model(model_args, data_args, training_args, tokenizer, logger):

@@ -82,28 +82,28 @@ if __name__ == "__main__":
 
     # dataset-specific args
     if args.dataset.lower() in ['kgd', 'topical_chat']:
-        gen_args.update(topical_chat_data_config)
+        gen_args.update(TOPICAL_CHAT_DATA_CONFIG)
     elif args.dataset.lower() in ['csd', 'cs_dialog']:
-        gen_args.update(commonsense_dialog_data_config)
+        gen_args.update(COMMONSENSE_DIALOG_DATA_CONFIG)
     elif args.dataset.lower() in ['dd', 'daily_dialog']:
-        gen_args.update(daily_dialog_data_config)
+        gen_args.update(DAILY_DIALOG_DATA_CONFIG)
 
     # basic decoding args
     if args.greedy:
-        gen_args.update(greedy_config)        
+        gen_args.update(GREEDY_CONFIG)        
     else:
-        gen_args.update(baseline_config)
+        gen_args.update(BASELINE_CONFIG)
     
     # experiment-specific args
     # note: it's possible to pass multiple experiment ids separated by '+', e.g. --exp_id=xa_knowledge+qu_ctxt_aug5
     for exp_id in args.exp_id.split('+'):
         if args.dataset.lower() in ['kgd', 'topical_chat']:
-            exp_config = tc_experiment_configs.get(exp_id, None)
+            exp_config = KGD_EXPERIMENT_CONFIGS.get(exp_id, None)
         elif args.dataset.lower() in ['csd', 'cs_dialog']:
-            exp_config = csd_experiment_configs.get(exp_id, None)
+            exp_config = CSD_EXPERIMENT_CONFIGS.get(exp_id, None)
             gen_args.update({'beam_size': 1}) # reduce beam size for CD    
         elif args.dataset.lower() in ['dd', 'daily_dialog']:
-            exp_config = dd_experiment_configs.get(exp_id, None)
+            exp_config = DD_EXPERIMENT_CONFIGS.get(exp_id, None)
             
         if exp_id != 'baseline':
             if exp_config is not None:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     
     # debug args for test runs
     if args.debug:
-        gen_args.update(debug_config)
+        gen_args.update(DEBUG_CONFIG)
     
     results = []
     seed_count = 0
