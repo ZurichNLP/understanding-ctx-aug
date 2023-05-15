@@ -59,7 +59,9 @@ mkdir results
 
 ### Data
 
-Experiments in the original paper mostly use the Topical Chat dataset ([https://m.media-amazon.com/images/G/01/amazon.jobs/3079_Paper._CB1565131710_.pdf](Gopalakrishnan_et_al_2019)), which can be found at [https://github.com/alexa/Topical-Chat]
+Experiments in the original paper mostly use the 
+Topical Chat dataset ([Gopalakrishnan et al., 2019](https://m.media-amazon.com/images/G/01/amazon.jobs/3079_Paper._CB1565131710_.pdf)), 
+which can be found [here](https://github.com/alexa/Topical-Chat).
 
 To download the data for fine-tuning, run:
 
@@ -86,7 +88,7 @@ sbatch jobs/run_data_prep-TopicalChat.sh
 
 For additional dataset experiments:
 
-- Commonsense-Dialogues ([https://arxiv.org/abs/2109.06427](Zhou et al., 2021))
+- Commonsense-Dialogues ([Zhou et al., 2021](https://arxiv.org/abs/2109.06427))
 
 ```
 git clone https://github.com/alexa/Commonsense-Dialogues.git data/Commonsense-Dialogues
