@@ -4,7 +4,7 @@
 # example usage:
 # . jobs/dummy_run.sh -s 85 -c configs/exp1.yml -f 1
 
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 

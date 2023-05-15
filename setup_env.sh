@@ -15,10 +15,14 @@
 # conda activate
 
 # # create new clean environment
-# conda create -n unsup_cntrl_3 python=3.8 -y
-# conda activate unsup_cntrl_3 && echo "CONDA ENV: $CONDA_DEFAULT_ENV"
+# conda create -n unsup_ctrl python=3.8 -y
+# conda activate unsup_ctrl && echo "CONDA ENV: $CONDA_DEFAULT_ENV"
+
 
 # pip install -r requirements.txt
+
+# # depending on cuda driver, may need to install from whl, e.g.
+# pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
 
 # # for finetuning data preprocessing
 # python -m spacy download en_core_web_sm

@@ -15,7 +15,16 @@ def compute_sim(src_preds, tgt_preds):
     smi = simple_matching_coefficient(src_preds, tgt_preds)
     pearson = pearsonr(src_preds, tgt_preds)[0]
     jaccard_score = jaccard(src_preds, tgt_preds)
-    print(f'{sum(src_preds)/len(src_preds):.4f}\t{sum(tgt_preds)/len(tgt_preds):.4f}\t{smi:.4f}\t{pearson:.4f}\t{jaccard_score:.4f}')
+
+    data = {
+        'AVG SRC': round(sum(src_preds)/len(src_preds), 4),
+        'AVG TGT': round(sum(tgt_preds)/len(tgt_preds), 4),
+        'SMI': round(smi, 4),
+        'Pearson R': round(pearson, 4),
+        'JAC': round(jaccard_score, 4)
+    }
+
+    return data
 
 def compare_dist_metrics(X, Y):
     print('X:', X)

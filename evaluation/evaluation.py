@@ -147,7 +147,7 @@ def compute_reference_free_metrics(
     result['vader_neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
     result['vader_neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
 
-    sentiment_preds = classify_sentiment(sys_outputs, 'distilbert-base-uncased-finetuned-sst-2-english', 512)
+    sentiment_preds = classify_sentiment(sys_outputs, 'distilbert-base-uncased-finetuned-sst-2-english', 128)
     result['pos_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'POSITIVE']) / len(sentiment_preds)
     result['neu_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEUTRAL']) / len(sentiment_preds)
     result['neg_sents'] = sum([1 for i in sentiment_preds if i['label'] == 'NEGATIVE']) / len(sentiment_preds)
@@ -160,7 +160,7 @@ def compute_reference_free_metrics(
     result['hedging_evasion'] = count_hedge_phrases(sys_outputs, hedging_evasion) / len(sys_outputs)
 
     # uncertainty cues hedging detection
-    hedgehog = HedgeHogModel(use_cuda=True, batch_size=512, mp=False)
+    hedgehog = HedgeHogModel(use_cuda=True, batch_size=128, mp=False)
     predictions, _ = hedgehog.annotate(sys_outputs)
     token_counts, sent_counts = hedgehog.count_hedges(predictions)
     for key, value in sent_counts.items():
@@ -171,7 +171,7 @@ def compute_reference_free_metrics(
     # perplexity
     if verbose:
         print('computing perplexity...')
-    ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=512)
+    ppl_mean, ppl_std = score_ppl(sys_outputs, batch_size=128)
     result['ppl_mean'] = ppl_mean
     result['ppl_std'] = ppl_std
 
@@ -367,6 +367,10 @@ def main(args):
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neu_sents-10.txt'))
             elif exp_id == 'neg_sent_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-neg_sents-5.txt'))
+            elif exp_id == 'long_pos_sent_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_pos_sents-10.txt'))
+            elif exp_id == 'long_neg_sent_ctxt_aug5':
+                generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-train_neg_sents-10.txt'))
             elif exp_id == 'hedging_contrast_ctxt_aug5':
                 generations_files = sorted(Path(args.generations).glob(f'*tp=0.9_ctxt=5-hedging_contrast-5.txt'))
             elif exp_id == 'hedging_management_ctxt_aug5':

@@ -14,7 +14,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+repo_base='/data/tkew/projects/unsup_ctrl/'
 
 # arguments that are not supported
 print_usage() {
@@ -75,4 +75,4 @@ done
 # extract questions for context augmentation experiments
 python collect_contexts.py \
     --corpus_file "$data_dir/KGD/train.json" \
-    --outfile "$data_dir/KGD/train_questions.txt"
+    --outfile "$data_dir/KGD/contexts/train_questions.txt"

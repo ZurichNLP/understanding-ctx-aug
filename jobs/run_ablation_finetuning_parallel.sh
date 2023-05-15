@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --array=0-3
 #SBATCH --output=%j.out
 
@@ -16,7 +16,7 @@
 #######################################################################
 
 # defaults
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False

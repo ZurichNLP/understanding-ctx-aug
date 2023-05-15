@@ -1,28 +1,27 @@
 #!/bin/bash
-#SBATCH --time=00:30:00
+#SBATCH --time=2:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --partition=generic
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_conversions.sh -i
-
-# --checkpoint resources/models/pt/fairseq/bart_small/checkpoint_best.pt \
-# --tokenizer resources/data/books1/tok/tokenizer \
-# --output_dir resources/models/pt/huggingface_conv/bart_small
+# sbatch jobs/run_data_prep.sh -d resources/data/Topical-Chat
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
 repo_base='/data/tkew/projects/unsup_ctrl/'
+data_dir=''
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r repo_base -c checkpoint -o output_dir -t tokenizer"
+    >&2 echo "$script -r repo_base [-d data_dir]"
 }
 
 # missing arguments that are required
@@ -34,12 +33,10 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "r:c:t:o:" flag; do
+while getopts "r:d:" flag; do
   case "${flag}" in
     r) repo_base="$OPTARG" ;;
-    c) checkpoint_dir="$OPTARG" ;;
-    o) output_dir="$OPTARG" ;;
-    t) tokenizer="$OPTARG" ;;
+    d) data_dir="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -51,19 +48,8 @@ if [[ -z $repo_base ]]; then
     exit 1
 fi
 
-if [[ -z $checkpoint_dir ]]; then
-    print_missing_arg "[-c checkpoint_dir]" "path to directory containing model (checkpoint_best.pt) trained with Fairseq"
-    exit 1
-fi
-
-if [[ -z $output_dir ]]; then
-    print_missing_arg "[-o output_dir]" "path to save converted modelfor Hugging Face "
-    exit 1
-fi
-
-if [[ -z $tokenizer ]]; then
-    print_missing_arg "[-t tokenizer]" "path to Hugging Face tokenizer used to prepare data for Fairseq"
-    exit 1
+if [[ -z $data_dir ]]; then
+    echo "No data dir specified. Dataset will be downloaded from Hugging Face Hub..."
 fi
 
 # cd to base dir/pretraining
@@ -76,10 +62,17 @@ cd "$repo_base" && echo $(pwd) || exit 1
 source start.sh
 
 #######################################################################
-# LAUNCH
+# LAUNCH JOB
 #######################################################################
 
-python pretraining/convert_fairseq_bart_model_to_transformers.py \
-    --checkpoint "$checkpoint_dir/checkpoint_best.pt" \
-    --tokenizer "$tokenizer" \
-    --output_dir "$output_dir"
+save_dir="$repo_base/resources/data/DailyDialog/DD"
+for split in validation test train; do
+    python prepare_daily_dialog_dataset.py \
+        --split "$split" \
+        --save_dir "$save_dir"
+done
+
+# extract questions for context augmentation experiments
+python collect_contexts.py \
+    --corpus_file "$save_dir/train.json" \
+    --outfile "$save_dir/contexts/train_questions.txt"

@@ -20,6 +20,6 @@ def score_ppl(input_texts: List[str], model_id: str = 'distilgpt2', batch_size: 
     print(list(results.keys()))
     >>>['perplexities', 'mean_perplexity']
     """
-    ppl = perplexity.compute(model_id='distilgpt2', add_start_token=True, predictions=input_texts, batch_size=batch_size)
+    ppl = perplexity.compute(model_id=model_id, add_start_token=True, predictions=input_texts, batch_size=batch_size)
     
     return ppl["mean_perplexity"], np.array(ppl['perplexities']).std()

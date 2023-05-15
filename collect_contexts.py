@@ -30,10 +30,22 @@ def set_args():
     return ap.parse_args()
 
 def load_corpus(corpus_file):
-    if 'Topical-Chat' in corpus_file:
+    if 'topical-chat' in corpus_file.lower():
         extension = corpus_file.split(".")[-1]
         dataset_dict = load_dataset(extension, data_files=corpus_file)
         corpus_sents = dataset_dict['train']['target']
+    elif 'commonsense' in corpus_file.lower():
+        dataset_dict = load_dataset('json', data_files=corpus_file)
+        corpus_sents = dataset_dict['train']['target']
+        # note: for commonsense, we also consider sentences from the context
+        for turns in dataset_dict['train']['turns']:
+            corpus_sents.extend(turn for turn in turns if turn != '')
+    elif 'dailydialog' in corpus_file.lower():
+        dataset_dict = load_dataset('json', data_files=corpus_file)
+        corpus_sents = dataset_dict['train']['target']
+
+    print(f'Corpus sentences: {len(corpus_sents)}')
+
     return corpus_sents
 
 def clean(string):
@@ -47,7 +59,7 @@ def extract_questions(corpus, nlp, sentence_length_threshold=6):
         for sent in doc.sents:
             if len(sent) >= sentence_length_threshold and sent.text.strip().endswith('?'):
                 questions.add(clean(sent.text))
-    print(f'Found {len(questions)} questions in corpus.')
+    print(f'Found {len(questions)} questions in corpus')
     return questions
 
 def extract_exclamations(corpus, nlp, sentence_length_threshold=6):
@@ -57,7 +69,7 @@ def extract_exclamations(corpus, nlp, sentence_length_threshold=6):
         for sent in doc.sents:
             if len(sent) >= sentence_length_threshold and sent.text.strip().endswith('!'):
                 exlamations.add(clean(sent.text))
-    print(f'Found {len(exlamations)} exlamations in corpus.')
+    print(f'Found {len(exlamations)} exlamations in corpus')
     return exlamations
 
 def write_to_outfile(iterable, outfile, total=None):
@@ -70,7 +82,7 @@ def write_to_outfile(iterable, outfile, total=None):
                 break
             f.write(item + '\n')
     
-    print(f'Wrote {i+1} items to {outfile}.')
+    print(f'Wrote {i+1} items to {outfile}')
 
     return
 

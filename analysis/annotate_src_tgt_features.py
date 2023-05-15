@@ -3,18 +3,32 @@
 
 """
 
-python annotate_src_tgt_features.py resources/data/Topical-Chat/KGD/train.json question resources/question_features.csv
+NBI: output file will be infered from the input file name and the feature type
+NBII: run on GPU for sentiment features
 
-# run on GPU!
-python annotate_src_tgt_features.py resources/data/Topical-Chat/KGD/train.json sentiment resources/sentiment_features.csv
+python -m analysis.annotate_src_tgt_features \
+    resources/data/Topical-Chat/KGD/train.json \
+    question
+
+python -m analysis.annotate_src_tgt_features \
+    resources/data/Topical-Chat/KGD/train.json \
+    question
+
+python -m analysis.annotate_src_tgt_features \
+    resources/data/Commonsense-Dialogues/CD/train.json \
+    question
+
+python -m analysis.annotate_src_tgt_features \
+    resources/data/DailyDialog/DD/train.json \
+    question
 
 """
 
 import sys
 from pathlib import Path
-base_dir = str(Path(sys.path[0]) / "..")
-sys.path.insert(0, base_dir)
-print(sys.path)
+# base_dir = str(Path(sys.path[0]) / "..")
+# sys.path.insert(0, base_dir)
+# print(sys.path)
 
 import json
 from datasets import load_dataset, concatenate_datasets
@@ -28,7 +42,7 @@ import matplotlib.pyplot as plt
 from data import preprocess_topical_chat_dataset, preprocess_function, load_data, prepare_data_for_model
 from evaluation.sentiment import classify_sentiment_with_vader, parse_vader_result, classify_sentiment
 
-from sim_metrics import simple_matching_coefficient, compute_sim
+from analysis.sim_metrics import simple_matching_coefficient, compute_sim
 
 def load_json_dataset(dataset: Path):   
     split = dataset.stem
@@ -57,12 +71,20 @@ def classify_tgts(tgts):
 if __name__ == '__main__':
     
     dataset = sys.argv[1] # resources/data/Topical-Chat/KGD/test_freq.json
-    outfile = sys.argv[2] # resources/sentiment_features.csv
-    feature_type = sys.argv[3] # sentiment
+    feature_type = sys.argv[2] # sentiment
+
+    # infer outfile name
+    outpath = Path(dataset).parent / 'analysis' 
+    outpath.mkdir(exist_ok=True, parents=True)
+    outfile = outpath / f'{Path(dataset).stem}_{feature_type}_features.csv'
+
+    print(f'inferred outfile: {outfile}')
 
     dataset = load_json_dataset(Path(dataset))
     # print(dataset)
-    src_texts = [[k] + turns for k, turns in zip(dataset['test']['knowledge'], dataset['test']['turns'])]
+
+    # src_texts = [[k] + turns for k, turns in zip(dataset['test']['knowledge'], dataset['test']['turns'])]
+    src_texts = [turns for turns in dataset['test']['turns']]
     tgt_texts = dataset['test']['target']
 
     if feature_type == 'sentiment': # run on GPU!
@@ -77,7 +99,7 @@ if __name__ == '__main__':
     # to to disk so we can load it later
     df = pd.DataFrame({'tgt_texts': tgt_texts, f'tgt_{feature_type}': tgt_preds})
     for i in range(len(src_texts[0])):
-        df[f'src_{i}'] = [s[i] for s in src_texts] # add knowledge text
-        df[f'src_{i}_{feature_type}'] = src_preds[:,i]
+        df[f'src_{i+1}'] = [s[i] for s in src_texts] # add knowledge text
+        df[f'src_{i+1}_{feature_type}'] = src_preds[:,i]
     df.to_csv(outfile, index=False)
     print(f'wrote {feature_type} features DF to {outfile}')

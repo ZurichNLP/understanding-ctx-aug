@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -22,7 +22,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/net/cephfs/data/tkew/projects/unsup_cntrl'
+repo_base='/data/tkew/projects/unsup_ctrl/'
 dataset="resources/data/Topical-Chat/KGD/valid_freq.json"
 batch_size=120
 max_predict_samples=0.2

@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --partition=lowprio
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -13,7 +13,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 # SEED=4
 
 # argument parser

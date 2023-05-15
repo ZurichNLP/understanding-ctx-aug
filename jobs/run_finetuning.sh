@@ -2,31 +2,31 @@
 #SBATCH --time=6:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
-#SBATCH --gres=gpu:1
-#SBATCH --partition=volta
+#SBATCH --gres=gpu:V100:1
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_finetuning.sh -i roberta-base -o resources/models/seed_1984/ft/roberta_base -s 1984
+# sbatch jobs/run_finetuning.sh -i roberta-base -o resources/models/seed_1984/ft/roberta_base -s 1984 -d resources/data/Topical-Chat/KGD
 
 #######################################################################
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
 # defaults
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+BASE='/data/tkew/projects/unsup_ctrl/'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False
 MAX_TRAIN_SAMPLES=1.0
 EVAL_RUNS_PER_EPOCH=1 # for ablations
 INIT_AS_RANDOM=False
+DATA_DIR='resources/data/Topical-Chat/KGD'
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script -r [-b BASE] -i input_dir -o output_dir [-s seed]"
+    >&2 echo "$script -r [-b BASE] -i input_dir -o output_dir [-s seed] ... (see below for more arguments)"
 }
 
 # missing arguments that are required
@@ -54,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -s|--seed)
             SEED="$2"
+            shift 2
+            ;;
+        -d|--data_dir)
+            DATA_DIR="$2"
             shift 2
             ;;
         --is_encoder_decoder)
@@ -128,4 +132,5 @@ bash finetune.sh \
     "$TIE_ENCODER_DECODER" \
     "$MAX_TRAIN_SAMPLES" \
     "$EVAL_RUNS_PER_EPOCH" \
-    "$INIT_AS_RANDOM"
+    "$INIT_AS_RANDOM" \
+    "$DATA_DIR"

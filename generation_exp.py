@@ -11,14 +11,15 @@ import pandas as pd
 import json
 
 from inference import InferenceModel
+from constants import *
 from evaluation.evaluation import score_kgd_generation
 
 def set_args():
-
     ap = argparse.ArgumentParser()
     ap.add_argument("--model_dir", type=str, required=True, default=None, help="path to the finetuned model folder")
     ap.add_argument("--checkpoint", type=str, default=None, help="checkpoint to use for generation, if required")
-    ap.add_argument("--dataset", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
+    ap.add_argument("--dataset", type=str, required=False, default="kgd", help="dataset type")
+    ap.add_argument("--test_file", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
     ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
     ap.add_argument("--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
@@ -26,35 +27,7 @@ def set_args():
     ap.add_argument("--data_seed", type=int, default=0, help="random seed for the dataset split. We keep this fixed for all seeds to ensure that the same samples are used for all seeds")
     ap.add_argument("--batch_size", type=int, default=120, help="batch size to use for inference. Adjust this depending on the size of the GPU and the model.")
     ap.add_argument("--greedy", action="store_true", help="whether or not to use greedy decoding")
-    ap.add_argument("--exp_id", required=False, default='baseline', 
-        choices=[
-            "baseline",
-            "xa_knowledge",
-            "xa_dialog",
-            "qu_ctxt_aug1",
-            "qu_ctxt_aug5",
-            "xa_knowledge+qu_ctxt_aug5",
-            "xa_dialog+qu_ctxt_aug5",
-            # "tagged_qu_ctxt_aug5", # for debugging
-            "pos_sent_ctxt_aug5",
-            "neg_sent_ctxt_aug5",
-            # "neu_sent_ctxt_aug5",
-            "single_qu_ctxt_aug5",
-            "single_pos_ctxt_aug5",
-            "short_qu_ctxt_aug5",
-            "ambig_qu_ctxt_aug5",
-            "ambig_excl_ctxt_aug5",
-            "excl_ctxt_aug5",
-            "hedging_contrast_ctxt_aug5",
-            "hedging_management_ctxt_aug5",
-            "hedging_evasion_ctxt_aug5",
-            "e_words_ctxt_aug5",
-            "d_words_ctxt_aug5",
-            "i_words_ctxt_aug5",
-            "n_words_ctxt_aug5",
-        ],
-        help="experiment id"
-    )
+    ap.add_argument("--exp_id", required=False, default='baseline', help="experiment id")
     ap.add_argument("--debug", action="store_true", help="set for test runs")
 
     return ap.parse_args()
@@ -74,145 +47,6 @@ def get_best_checkpoint(model_dir):
     else: # assume that the best checkpoint is the earliest checkpoint with save_total_limit = 1
         checkpoints = sorted(list(Path(model_dir).glob('checkpoint-*')))
         return checkpoints[0].stem
-
-
-topical_chat_data_config = {
-    "text_column": "turns",
-    "summary_column": "target",
-    "knowledge_column": "knowledge",
-}
-
-baseline_config = {
-    "max_length": 40,
-    "do_sample": True,
-    "top_p": 0.9,
-    "top_k": 0,
-    "temperature": 0.7,
-    "beam_size": 4,
-    "num_return_sequences": 1,
-    "write_to_file": "auto",
-    "context_augmentation_examples": None, # included to unify results csvs across experiments
-    "context_code_attention_bias_value": 1,
-    "max_context_examples": 0,
-    "cross_attention_bias_value": 1,
-    "bias_profile": None,
-}
-
-greedy_config = {
-    "max_length": 40,
-    "do_sample": False,
-    "beam_size": 1,
-    "num_return_sequences": 1,
-    "write_to_file": "auto",
-}
-
-debug_config = {
-    "max_predict_samples": 5,
-    "write_to_file": '',
-    "verbose": True,
-    "debug": True,
-}
-
-experiment_configs = {
-    "xa_knowledge": {
-        "cross_attention_bias_value": 5,
-        "bias_profile": "knowledge",
-    },
-    "xa_dialog": {
-        "cross_attention_bias_value": 5,
-        "bias_profile": "dialog",
-    },
-    "qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "short_qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/short_questions.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    "single_qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 1,
-    },
-    "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_questions.txt",
-        "context_code_attention_bias_value": 1,
-        "max_context_examples": 10,
-    },
-    "pos_sent_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/pos_sents.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    "single_pos_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/pos_sents.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 1,
-    },
-    "neg_sent_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/neg_sents.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    # "neu_sent_ctxt_aug5": {
-    #     "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_neu_sents.txt",
-    #     "context_code_attention_bias_value": 5,
-    #     "max_context_examples": 10,
-    # },
-    "hedging_contrast_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_contrast.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    "hedging_management_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_management.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    "hedging_evasion_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/hedging_evasion.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 5,
-    },
-    "ambig_qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_ambig_questions.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "ambig_excl_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_amibig_exclamations.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "excl_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/train_exclamations.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "e_words_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/E_words.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "d_words_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/D_words.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "i_words_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/I_words.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-    "n_words_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/Topical-Chat/KGD/contexts/N_words.txt",
-        "context_code_attention_bias_value": 5,
-        "max_context_examples": 10,
-    },
-}
 
 def print_args(args: Dict):
     string = ''
@@ -240,28 +74,46 @@ if __name__ == "__main__":
         "model_name_or_path": args.model_dir,
         "checkpoint_dir": args.checkpoint,
         "batch_size": args.batch_size,
-        "test_file": args.dataset, # add dataset passed as argument
+        "test_file": args.test_file, # add dataset passed as argument
         "data_seed": args.data_seed,
         "max_predict_samples": args.max_predict_samples,
         "output_dir": args.generation_dir,
         }
 
     # dataset-specific args
-    gen_args.update(topical_chat_data_config)
-    
-    # decoding args
+    if args.dataset.lower() in ['kgd', 'topical_chat']:
+        gen_args.update(TOPICAL_CHAT_DATA_CONFIG)
+    elif args.dataset.lower() in ['csd', 'cs_dialog']:
+        gen_args.update(COMMONSENSE_DIALOG_DATA_CONFIG)
+    elif args.dataset.lower() in ['dd', 'daily_dialog']:
+        gen_args.update(DAILY_DIALOG_DATA_CONFIG)
+
+    # basic decoding args
     if args.greedy:
-        gen_args.update(greedy_config)        
+        gen_args.update(GREEDY_CONFIG)        
     else:
-        gen_args.update(baseline_config)
+        gen_args.update(BASELINE_CONFIG)
     
     # experiment-specific args
+    # note: it's possible to pass multiple experiment ids separated by '+', e.g. --exp_id=xa_knowledge+qu_ctxt_aug5
     for exp_id in args.exp_id.split('+'):
-        gen_args.update(experiment_configs.get(exp_id, {}))
+        if args.dataset.lower() in ['kgd', 'topical_chat']:
+            exp_config = KGD_EXPERIMENT_CONFIGS.get(exp_id, None)
+        elif args.dataset.lower() in ['csd', 'cs_dialog']:
+            exp_config = CSD_EXPERIMENT_CONFIGS.get(exp_id, None)
+            gen_args.update({'beam_size': 1}) # reduce beam size for CD    
+        elif args.dataset.lower() in ['dd', 'daily_dialog']:
+            exp_config = DD_EXPERIMENT_CONFIGS.get(exp_id, None)
+            
+        if exp_id != 'baseline':
+            if exp_config is not None:
+                gen_args.update(exp_config)
+            else:
+                raise ValueError(f'Invalid experiment id: {exp_id}')
     
     # debug args for test runs
     if args.debug:
-        gen_args.update(debug_config)
+        gen_args.update(DEBUG_CONFIG)
     
     results = []
     seed_count = 0
@@ -280,6 +132,7 @@ if __name__ == "__main__":
         
         m = InferenceModel(gen_args)
         predict_dataset = m.load_test_set_for_generation() # default: resources/data/Topical-Chat/KGD/test_freq.json
+        
         outputs = m.generate_KGD(predict_dataset)
         outputs = [o[0] for o in outputs] # take only the first output for each input (in case of multiple return sequences)
         
@@ -295,14 +148,32 @@ if __name__ == "__main__":
 
             minor_start = time.time() # time scoring run
 
-            scored = score_kgd_generation(
-                outputs, 
-                targets=[[i] for i in predict_dataset['target']],
-                knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
-                dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
-                verbose=True if args.debug else False,
-                )
+            if args.dataset.lower() in ['kgd', 'topical_chat']:
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=[[i] for i in predict_dataset['knowledge']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
+            elif args.dataset.lower() in ['csd', 'cs_dialog']:
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=[[i] for i in predict_dataset['context']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
             
+            elif args.dataset.lower() in ['dd', 'daily_dialog']:
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=None, #[[''] for i in predict_dataset['target']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
+                
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)
         

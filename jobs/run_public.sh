@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
-# Job script to train a public model (e.g. BART-base) from scratch on the Topical-Chat dataset and evaluate it on the test set.
+# Job script to fine-tune a public model (e.g. BART-base) on the Topical-Chat dataset and evaluate it on the test set.
 
 # example usage:
 # . jobs/run_public.sh -s 23 -m t5-small -f 1
 
-BASE='/net/cephfs/data/tkew/projects/unsup_cntrl'
+# updates:
+# - 04.04.23: multile dataset experiments
+
+BASE='/data/tkew/projects/unsup_ctrl/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 SAVE_DIR_PREFIX="$BASE/resources/models"
+DATA_DIR="$BASE/resources/data/Topical-Chat/KGD/"
 
 # arguments that are not supported
 print_usage() {
     script=$(basename "$0")
     >&2 echo "Usage: "
-    >&2 echo "$script "
+    >&2 echo "$script [-b base] [-s seed] -m model [-d data_dir] [-f force]"
 }
 
 # missing arguments that are required
@@ -27,12 +31,13 @@ print_missing_arg() {
 }
 
 # argument parser
-while getopts "b:s:m:f:" flag; do
+while getopts "b:s:m:f:d:" flag; do
   case "${flag}" in
     s) SEED="$OPTARG" ;;
     b) BASE="$OPTARG" ;;
     m) HF_MODEL_NAME="$OPTARG" ;;
     f) FORCE="$OPTARG" ;;
+    d) DATA_DIR="$OPTARG" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -51,6 +56,11 @@ fi
 
 if [[ -z $SEED ]]; then
     print_missing_arg "[-s SEED]" "random seed"
+    exit 1
+fi
+
+if [[ -z $DATA_DIR ]]; then
+    print_missing_arg "[-d DATA_DIR]" "data directory"
     exit 1
 fi
 
@@ -73,8 +83,8 @@ source "$BASE/jobs/job_utils.sh"
 # # SLURM JOB ARGS
 # #######################################################################
 
-SLURM_ARGS_VOLTA="--qos=vesta --time=12:00:00 --gres gpu:1 --cpus-per-task 1 --mem-per-cpu=8G --partition=volta"
-SLURM_ARGS_VOLTA_LARGE="--qos=vesta --time=12:00:00 --gres gpu:Tesla-V100-32GB:1 --cpus-per-task 1 --mem-per-cpu=16G --partition=volta"
+# SLURM_ARGS_VOLTA="--time=12:00:00 --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=8G --partition=lowprio"
+SLURM_ARGS_VOLTA_LARGE="--time=8:00:00 --gres=gpu:V100:1 --constraint=GPUMEM32GB --cpus-per-task=1 --mem-per-cpu=16G"
 
 # #######################################################################
 # # SET EXPERIMENT SETTINGS 
@@ -116,24 +126,34 @@ case $HF_MODEL_NAME in
     ;;
 esac
 
+case $DATA_DIR in
+    "resources/data/DailyDialog/DD")
+        TEST_SET="$DATA_DIR/test.json"
+        ;;
+    "resources/data/Commonsense-Dialogues/CSD")
+        TEST_SET="$DATA_DIR/test.json"
+        ;;
+    "resources/data/Topical-Chat/KGD")
+        TEST_SET="$DATA_DIR/test_freq.json" # can also use test_rare.json
+        ;;
+    *)
+        echo -n "failed to identify test set in $DATA_DIR" && exit 1
+    ;;
+esac
 
-LOG_DIR="$SAVE_DIR_PREFIX/seed_$SEED/logs/$MODEL_ID"
-FINETUNE_SAVE_DIR="$SAVE_DIR_PREFIX/seed_$SEED/ft/$MODEL_ID"
-RESULTS_DIR="$SAVE_DIR_PREFIX/seed_$SEED/results/topchat_kgd_test_freq-public_models"
+DATASET_ID=$(infer_dataset_id $DATA_DIR)
+FINETUNED_MODEL_DIR=$(infer_model_path $SEED $DATASET_ID $MODEL_ID)
+LOG_DIR="$FINETUNED_MODEL_DIR/logs"
+RESULTS_DIR=$(infer_output_path $FINETUNED_MODEL_DIR $TEST_SET)
 
-echo "$LOG_DIR"
-echo "$FINETUNE_SAVE_DIR"
-echo "$RESULTS_DIR"
+mkdir -p "$FINETUNED_MODEL_DIR" "$LOG_DIR" "$RESULTS_DIR"
 
-
-#######################################################################
+######################################################################
 # INIT LOGGING
-#######################################################################
+######################################################################
 
 SLURM_DEFAULT_FILE_PATTERN="%j.out"
 SLURM_LOG_ARGS="-o $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN -e $LOG_DIR/$SLURM_DEFAULT_FILE_PATTERN"
-
-mkdir -p "$LOG_DIR" "$RESULTS_DIR"
 
 #######################################################################
 # LAUNCH EXPERIMENT
@@ -143,21 +163,25 @@ mkdir -p "$LOG_DIR" "$RESULTS_DIR"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 date | tee -a "$LOG_DIR/MAIN"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
+echo "SLURM_ARGS: $SLURM_ARGS_VOLTA_LARGE $SLURM_LOG_ARGS" | tee -a "$LOG_DIR/MAIN"
 echo "BASE: $BASE" | tee -a "$LOG_DIR/MAIN"
 echo "SEED: $SEED" | tee -a "$LOG_DIR/MAIN"
 echo "HF_MODEL_NAME: $HF_MODEL_NAME" | tee -a "$LOG_DIR/MAIN"
 echo "MODEL_ID: $MODEL_ID" | tee -a "$LOG_DIR/MAIN"
-echo "FINETUNE_SAVE_DIR: $FINETUNE_SAVE_DIR" | tee -a "$LOG_DIR/MAIN"
+echo "DATA_DIR: $DATA_DIR" | tee -a "$LOG_DIR/MAIN"
+echo "FINETUNED_MODEL_DIR: $FINETUNED_MODEL_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "RESULTS_DIR: $RESULTS_DIR" | tee -a "$LOG_DIR/MAIN"
+echo "TEST_SET: $TEST_SET" | tee -a "$LOG_DIR/MAIN"
 echo "LOG_DIR: $LOG_DIR" | tee -a "$LOG_DIR/MAIN"
 echo "##############################################" | tee -a "$LOG_DIR/MAIN"
 
+# run fine-tuning
 id_finetune=$(
     $BASE/jobs/sbatch_bare.sh \
-    $SLURM_ARGS_VOLTA_LARGE \
     $SLURM_LOG_ARGS \
+    $SLURM_ARGS_VOLTA_LARGE \
     $BASE/jobs/run_finetuning.sh \
-    -i "$HF_MODEL_NAME" -o "$FINETUNE_SAVE_DIR" -s "$SEED"
+    -i "$HF_MODEL_NAME" -o "$FINETUNED_MODEL_DIR" -s "$SEED" -d "$DATA_DIR"
 )
 
 echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DIR/MAIN"
@@ -166,10 +190,10 @@ echo "  id_finetune: $id_finetune | $LOG_DIR/$id_finetune.out" | tee -a "$LOG_DI
 id_generate=$(
     $BASE/jobs/sbatch_bare.sh \
     --dependency=afterok:$id_finetune \
-    $SLURM_ARGS_VOLTA_LARGE \
     $SLURM_LOG_ARGS \
+    $SLURM_ARGS_VOLTA_LARGE \
     $BASE/jobs/run_generation_exp.sh \
-    -m "$FINETUNE_SAVE_DIR" -b 120 -o "$RESULTS_DIR"
+    -m "$FINETUNED_MODEL_DIR" -b 120 -t "$TEST_SET" -o "$RESULTS_DIR"
 )
 
 echo "  id_generate: $id_generate | $LOG_DIR/$id_generate.out" | tee -a "$LOG_DIR/MAIN"

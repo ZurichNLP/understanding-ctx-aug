@@ -91,3 +91,45 @@ parse_denoising_args_to_string() {
     echo "$d_args"
 }
 
+# get KGD, CSD or DD from a path like resources/data/Commonsense-Dialogues/CSD/...
+infer_dataset_id() {
+    data="$1"
+    dataset_id=$(echo "$data" | cut -d'/' -f 4) # e.g. KGD, CSD, DD
+    echo "$dataset_id"
+}
+
+# output path for evaluation results
+infer_output_path() {
+    model_path="$1"
+    test_file="$2"
+
+    # Extract the model name from the model path
+    model_name=$(basename "$model_path")
+    # echo "$model_name"
+    if [[ "$model_name" == "bart_small"* ]]; then
+        model_type="bart_small"
+    else
+        model_type="public_models"
+    fi
+
+    # Extract the dataset name from the dataset path
+    test_file_id=$(basename "$test_file" | cut -d'.' -f1) # test_freq, test_rare or test
+    dataset_id=$(infer_dataset_id $test_file)
+    seed=$(echo "$model_path" | cut -d'/' -f3 | cut -d'_' -f2)
+
+    # Construct the output path
+    output_path="resources/models/seed_${seed}/${dataset_id}/results/${test_file_id}-${model_type}"
+
+    echo "$output_path"
+}
+
+# save path for fine-tuned model
+infer_model_path() {
+    seed="$1"
+    dataset_id="$2"
+    model_id="$3"
+    
+    save_path="resources/models/seed_${seed}/${dataset_id}/ft/${model_id}"
+
+    echo "$save_path"
+}
