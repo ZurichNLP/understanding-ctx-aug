@@ -39,11 +39,11 @@ if __name__ == '__main__':
     dirs_to_check = [f'resources/models/seed_{seed}/{tgt_model}/results' for seed in seeds]
 
     if tgt_model == 'KGD':
-        experiments = list(kgd_experiment_configs.keys())
+        experiments = list(KGD_EXPERIMENT_CONFIGS.keys())
     elif tgt_model == 'CSD':
-        experiments = list(csd_experiment_configs.keys())
+        experiments = list(CSD_EXPERIMENT_CONFIGS.keys())
     elif tgt_model == 'DD':
-        experiments = list(dd_experiment_configs.keys())
+        experiments = list(DD_EXPERIMENT_CONFIGS.keys())
 
     experiments.insert(0, 'baseline')
 
@@ -74,13 +74,14 @@ if __name__ == '__main__':
         for experiment in summary:
 
             if len(summary[experiment]) < len(expected_files):
+                
                 print(
                     f'{bcolors.UNDERLINE}{experiment:{col_width+ 8}}{bcolors.ENDC}\t\t' \
-                    f'{bcolors.WARNING}Missing {len(expected_files) - len(summary[experiment])} models: {bcolors.ENDC}' \
+                    f'{bcolors.WARNING}Has {len(summary[experiment])}/{len(expected_files)} models | missing: {bcolors.ENDC}' \
                     f'{bcolors.ENDC} {", ".join(list(expected_files - set(summary[experiment].keys())))} {bcolors.ENDC}'
                     )    
             else:
-                print(f'{bcolors.ENDC}{experiment:{col_width + 8}}{bcolors.ENDC}\t\t{bcolors.OKGREEN}Has all models{bcolors.ENDC}')
+                print(f'{bcolors.ENDC}{experiment:{col_width + 8}}{bcolors.ENDC}\t\t{bcolors.OKGREEN}Has {len(summary[experiment])}/{len(expected_files)} models{bcolors.ENDC}')
 
             for exp_id, lines in summary[experiment].items():
                 if lines != max_lines:
