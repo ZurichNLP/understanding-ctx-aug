@@ -1,4 +1,4 @@
-# Hidden Consequences of Pre-training Objectives in S2S Models
+# Understanding CTX AUG
 
 This repository contains the code for the ACL Findings paper [Uncovering Hidden Consequences of Pre-training Objectives in Sequence-to-Sequence Models (Kew & Senrich, 2023)](https://aclanthology.org/2023.findings-acl.438/).
 
