@@ -1,6 +1,6 @@
 # Understanding CTX AUG
 
-This repository contains the code for the ACL Findings paper [Uncovering Hidden Consequences of Pre-training Objectives in Sequence-to-Sequence Models (Kew & Senrich, 2023)](https://aclanthology.org/2023.findings-acl.438/).
+This repository contains the code for the ACL Findings paper [Uncovering Hidden Consequences of Pre-training Objectives in Sequence-to-Sequence Models (Kew & Sennrich, 2023)](https://aclanthology.org/2023.findings-acl.438/).
 
 Our experiments reimplement some of the zero-shot control methods described in the papers by [Zero-Shot Controlled Generation with Encoder-Decoder Transformers (Hazarika et al., 2021)](https://arxiv.org/abs/2106.06411) and [Attention Biasing and Context Augmentation for Zero-Shot Control of Encoder-Decoder Transformers for Natural Language Generation (Hazarika et al., 2022)](https://ojs.aaai.org/index.php/AAAI/article/view/21319).
 
@@ -115,7 +115,7 @@ See this [README](./pretraining/README.md).
 
 #### Fine-tuning base models
 
-The python script [`./finetune.py`](./finetune.py) is adapted from Hugging Face's`run_summarization.py` example script and can be used to fine-tune a new model for our experiments.
+The python script [`./finetune.py`](./finetune.py) is adapted from Hugging Face's `run_summarization.py` example script and can be used to fine-tune a new model for our experiments.
 
 The bash wrapper script [`./finetune.sh`](./finetune.sh) provides the training commands used to train our models.
 
