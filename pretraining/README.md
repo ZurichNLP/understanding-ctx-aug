@@ -1,4 +1,4 @@
-## Pretraining BART
+# Pretraining Mini BART Models
 
 BART pre-training was recently implemented in Hugging Face, but uses FLAX and doesn't implement **all** of the functionality of the original denoising dataset.
 
@@ -6,19 +6,19 @@ This repo (https://github.com/kb-labb/kb_bart) has some useful information on pr
 
 We opt for the original Fairseq implementation for pre-training and use a Hugging Face tokenizer for preprocessing. Once pre-trained, we convert the model to Hugging Face for fine-tuning.
 
-## Steps to reproduce
+## Steps to Reproduce
 
 For simplicity, first create a symlink to the resources folder containing models and data directories.
 
-#### 1. Download Data
+### 1. Download Data
 
-We use the version of Bookcorpus collected by Shawn Presser (https://twitter.com/theshawwn/status/1301852133319294976). To download, run:
+We use the version of [Bookcorpus collected by Shawn Presser](https://twitter.com/theshawwn/status/1301852133319294976). To download, run:
 
 ```bash
 bash get_data.sh
 ```
 
-#### 2. Prepare For Fairseq
+### 2. Prepare For Fairseq
 
 As preprocessing, we perform the following:
     - extract 'decent' looking sentences from each book and write them to train/validation splits
@@ -31,7 +31,7 @@ sbatch jobs/run_data_prep.sh -r /net/cephfs/data/tkew/projects/unsup_cntrl -d re
 # note, paths to sub-scripts may need to be adjusted in `prepare_bookcorpus.sh`
 ```
 
-#### 3. Pretrain 
+### 3. Run Pretraining
 
 Using the custom `bart-small` config, you can pre-train with different configs defined in `jobs/run_pretraining.sh`. Note, We also include conversion to Hugging Face after pre-training.
 
@@ -52,7 +52,7 @@ sbatch jobs/run_pretraining.sh -r /net/cephfs/data/tkew/projects/unsup_cntrl -p 
 . ./train_bart_fairseq.sh && train_baseline # ~ 6 hours
 ``` -->
 
-#### 4. Convert to Hugging Face
+### 4. Convert to Hugging Face
 
 ```bash
 python convert_fairseq_model_to_transformers.py \
