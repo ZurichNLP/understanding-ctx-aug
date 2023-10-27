@@ -1,6 +1,6 @@
 # Hidden Consequences of Pre-training Objectives in S2S Models
 
-This repository contains the code for the ACL Findings paper [Uncovering Hidden Consequences of Pre-training Objectives in Sequence-to-Sequence Models (Kew & Senrich, 2023)](https://aclanthology.org/2023.findings-acl.438/). 
+This repository contains the code for the ACL Findings paper [Uncovering Hidden Consequences of Pre-training Objectives in Sequence-to-Sequence Models (Kew & Senrich, 2023)](https://aclanthology.org/2023.findings-acl.438/).
 
 Our experiments reimplement some of the zero-shot control methods described in the papers by [Zero-Shot Controlled Generation with Encoder-Decoder Transformers (Hazarika et al., 2021)](https://arxiv.org/abs/2106.06411) and [Attention Biasing and Context Augmentation for Zero-Shot Control of Encoder-Decoder Transformers for Natural Language Generation (Hazarika et al., 2022)](https://ojs.aaai.org/index.php/AAAI/article/view/21319).
 
@@ -10,7 +10,7 @@ We recommend using a clean conda environment to run these scripts.
 
 To set up the working environment, run the following commands.
 
-```
+```bash
 # if running on cluster, load the relevant modules, e.g.
 module load anaconda3/2022.10 gpu gcc/8.5.0 cudnn/10.2.89
 
@@ -34,7 +34,7 @@ python -m ipykernel install --user --name=unsup_ctrl
 
 To set up the location of larger files such as data and models:
 
-```
+```bash
 mkdir resourses # or ln -s /path/to/storage/ resources
 mkdir resources/data
 mkdir resources/models
@@ -88,7 +88,7 @@ sbatch jobs/run_data_prep-CommonsenseDialogue.sh
 sbatch jobs/run_data_prep-DailyDialog.sh
 ``` -->
 
-## Experiments 
+## Experiments
 
 Experiments were run on a slurm cluster.
 
