@@ -34,13 +34,13 @@ def load_corpus(corpus_file):
         extension = corpus_file.split(".")[-1]
         dataset_dict = load_dataset(extension, data_files=corpus_file)
         corpus_sents = dataset_dict['train']['target']
-    elif 'commonsense' in corpus_file.lower():
+    elif 'commonsense-dialogues' in corpus_file.lower():
         dataset_dict = load_dataset('json', data_files=corpus_file)
         corpus_sents = dataset_dict['train']['target']
         # note: for commonsense, we also consider sentences from the context
         for turns in dataset_dict['train']['turns']:
             corpus_sents.extend(turn for turn in turns if turn != '')
-    elif 'dailydialog' in corpus_file.lower():
+    elif 'daily-dialog' in corpus_file.lower():
         dataset_dict = load_dataset('json', data_files=corpus_file)
         corpus_sents = dataset_dict['train']['target']
 

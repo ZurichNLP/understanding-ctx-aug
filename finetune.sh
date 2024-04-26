@@ -65,7 +65,7 @@ elif [[ $data_dir == *"Commonsense-Dialogues"* ]]; then
     validation_file="$data_dir/valid.json"
     test_file="$data_dir/test.json"
     knowledge_column="context"
-elif [[ $data_dir == *"DailyDialog"* ]]; then
+elif [[ $data_dir == *"Daily-Dialog"* ]]; then
     train_file="$data_dir/train.json"
     validation_file="$data_dir/valid.json"
     test_file="$data_dir/test.json"
