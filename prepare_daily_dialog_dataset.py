@@ -193,7 +193,7 @@ def set_args():
     ap.add_argument('--history_bucket_size', type=int, default=25, help='number of tokens in bucket for a historical turn')
     
     ap.add_argument('--verbose', action='store_true', help='print out debug information')
-    ap.add_argument('--save_dir', type=str, default='KGD', help='path to save directory')
+    ap.add_argument('--save_dir', type=str, default='resources/data/Daily-Dialog/DD', help='path to save directory')
 
     return ap.parse_args()
 
@@ -202,10 +202,10 @@ if __name__ == "__main__":
 
     args = set_args()
 
-    dd = DailyDialogDataset(args.data_dir, args.split, args.verbose)
-
-    dialogs = dd.get_all_dialogs()
-    dd.write_to_file(dialogs, args.save_dir)
+    for split in ['train', 'validation', 'test']:
+        dd = DailyDialogDataset(args.data_dir, split, args.verbose)
+        dialogs = dd.get_all_dialogs()
+        dd.write_to_file(dialogs, args.save_dir)
     
     # # # tokenize inputs according to description in the paper
     # # dd.tokenize_dialogs(dialogs, tokenizer=args.tokenizer, 
