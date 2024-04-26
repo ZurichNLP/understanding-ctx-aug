@@ -14,7 +14,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/data/tkew/projects/unsup_ctrl/'
+repo_base='/data/tkew/projects/understanding-ctx-aug/'
 data_dir=''
 
 # arguments that are not supported

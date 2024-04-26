@@ -3,6 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:V100:1
+#SBATCH --partition=lowprio
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -13,7 +14,7 @@
 #######################################################################
 
 # defaults
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False

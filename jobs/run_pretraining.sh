@@ -13,7 +13,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 # SEED=4
 
 # argument parser

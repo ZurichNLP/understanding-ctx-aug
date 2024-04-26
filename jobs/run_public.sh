@@ -9,7 +9,7 @@
 # updates:
 # - 04.04.23: multile dataset experiments
 
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 SAVE_DIR_PREFIX="$BASE/resources/models"

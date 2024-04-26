@@ -20,7 +20,7 @@
 #######################################################################
 
 # defaults
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 SEEDS=(23 42 1984)
 
 # arguments that are not supported

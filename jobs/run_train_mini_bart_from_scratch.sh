@@ -6,7 +6,7 @@
 # example usage:
 # bash jobs/run_train_mini_bart_from_scratch.sh -s 23 -c resources/models/seed_23/pt/hf_conv/bart_small-PS -m bart_small_rndm
 
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 SEED=4 # default
 FORCE=0 # whether to overwrite existing files
 

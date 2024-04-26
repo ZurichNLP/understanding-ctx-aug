@@ -26,7 +26,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/data/tkew/projects/unsup_ctrl/'
+repo_base='/data/tkew/projects/understanding-ctx-aug/'
 batch_size=120
 
 # arguments that are not supported

@@ -16,7 +16,7 @@
 #######################################################################
 
 # defaults
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 SEED=42
 IS_ENCODER_DECODER=False
 TIE_ENCODER_DECODER=False

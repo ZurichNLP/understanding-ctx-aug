@@ -4,7 +4,7 @@
 # example usage:
 # . jobs/run_ablation_generation_exp.sh -s 23 -m bart_small-SI_t5
 
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 RUN_FINETUNING="false" # for partial runs
 
 # arguments that are not supported

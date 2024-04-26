@@ -14,7 +14,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/data/tkew/projects/unsup_ctrl/'
+repo_base='/data/tkew/projects/understanding-ctx-aug/'
 test_set='resources/data/Topical-Chat/KGD/test_freq.json'
 output_dir=''
 

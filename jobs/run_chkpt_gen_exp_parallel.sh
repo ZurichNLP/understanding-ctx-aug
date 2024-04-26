@@ -15,7 +15,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/data/tkew/projects/unsup_ctrl/'
+repo_base='/data/tkew/projects/understanding-ctx-aug/'
 dataset="resources/data/Topical-Chat/KGD/valid_freq.json"
 batch_size=120
 max_predict_samples=0.2

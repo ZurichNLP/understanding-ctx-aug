@@ -6,7 +6,7 @@
 # example usage:
 # . jobs/run_train_public_from_scratch.sh -s 23 -c facebook/bart-base -f 1
 
-BASE='/data/tkew/projects/unsup_ctrl/'
+BASE='/data/tkew/projects/understanding-ctx-aug/'
 FORCE=0 # whether to overwrite existing files
 SEED=4 # default
 SAVE_DIR_PREFIX="$BASE/resources/models"
