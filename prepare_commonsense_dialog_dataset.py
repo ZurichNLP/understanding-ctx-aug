@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Steps:
+
+1. Clone the Commonsense Dialog Dataset repository from https://github.com/alexa/commonsense-dialogues to the resources/data directory.
+2. Run this script to extract the dialog instances from the json files and write them to a new json file.
+
+Example usage:
+    python prepare_commonsense_dialog_dataset.py
+
+"""
+
 import json
 from pathlib import Path
 from typing import List, Dict, Union, Optional
@@ -176,8 +187,8 @@ class CommonSenseDialogDataset:
 def set_args():
     ap = argparse.ArgumentParser()
     
-    ap.add_argument('--data_dir', type=str, required=True, help='path to data directory')
-    ap.add_argument('--split', type=str, default='train', help='train, valid, or test')
+    ap.add_argument('--data_dir', type=str, default='resources/data/Commonsense-Dialogues/data', help='path to data directory')
+    ap.add_argument('--split', type=str, default='all', help='train, valid, or test')
     ap.add_argument('--history_length', type=int, default=5, help='number of turns that make up the source sequence dialog history')
     ap.add_argument('--context_length', type=int, default=1, help='number of context snippets to use for dialog grounding')
     
@@ -186,7 +197,7 @@ def set_args():
     ap.add_argument('--history_bucket_size', type=int, default=25, help='number of tokens in bucket for a historical turn')
     
     ap.add_argument('--verbose', action='store_true', help='print out debug information')
-    ap.add_argument('--save_dir', type=str, default='KGD', help='path to save directory')
+    ap.add_argument('--save_dir', type=str, default='resources/data/Commonsense-Dialogues/CSD', help='path to save directory')
     
     return ap.parse_args()
 
@@ -195,11 +206,10 @@ if __name__ == "__main__":
 
     args = set_args()
 
-    csd = CommonSenseDialogDataset(args.data_dir, args.split, args.verbose)
-
-    dialogs = csd.get_all_dialogs()
-    # breakpoint()
-    csd.write_to_file(dialogs, args.save_dir)
+    for split in ['train', 'valid', 'test']:
+        csd = CommonSenseDialogDataset(args.data_dir, split, args.verbose)
+        dialogs = csd.get_all_dialogs()
+        csd.write_to_file(dialogs, args.save_dir)
     
     # # tokenize inputs according to description in the paper
     # tc.tokenize_dialogs(dialogs, tokenizer=args.tokenizer, 
