@@ -21,7 +21,7 @@ def set_args():
     ap.add_argument("--dataset", type=str, required=False, default="kgd", help="dataset type")
     ap.add_argument("--test_file", type=str, required=False, default="resources/data/Topical-Chat/KGD/test_freq.json", help="path to the dataset for generation")
     ap.add_argument("--max_predict_samples", type=float, default=1.0, help="maximum number of samples to predict as a percentage of the dataset size")
-    ap.add_argument("--output_dir", type=str, default='results', required=False, help="path to the output directory for evaluated results csvs")
+    ap.add_argument("--output_dir", type=str, default='resources/results', required=False, help="path to the output directory for evaluated results csvs")
     ap.add_argument("--generation_dir", type=str, default=None, required=False, help="path to the output directory for generation outputs")
     ap.add_argument("--seeds", type=int, nargs="*", default=[0, 42, 983, 8630, 284], help="list of random seeds to use for generation")
     ap.add_argument("--data_seed", type=int, default=0, help="random seed for the dataset split. We keep this fixed for all seeds to ensure that the same samples are used for all seeds")

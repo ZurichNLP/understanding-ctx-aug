@@ -191,12 +191,12 @@ CSD_EXPERIMENT_CONFIGS = {
 
 DD_EXPERIMENT_CONFIGS = {
     "qu_ctxt_aug5": {
-        "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+        "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
     "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/DailyDialog/DD/contexts/train_questions.txt",
+        "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/train_questions.txt",
         "context_code_attention_bias_value": 1,
         "max_context_examples": 10,
     },

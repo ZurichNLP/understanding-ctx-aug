@@ -9,7 +9,7 @@
 #SBATCH --output=%j.out
 
 # Author: T. Kew
-# sbatch jobs/run_generation_exp_parallel.sh -m resources/models/seed_1984/topical_chat/bart_mini-MLM -o resources/outputs/seed_1984/topical_chat/bart_mini-MLM -t resources/data/Topical-Chat/KGD/test_rare.json
+# sbatch jobs/run_generation_exp_parallel.sh -m resources/models/seed_1984/KGD/bart_mini-MLM -o resources/results/seed_1984/KGD/bart_mini-MLM -t resources/data/Topical-Chat/KGD/test_rare.json
 
 # NOTE: the output dir is inferred from the model path and the dataset path
 
@@ -17,7 +17,7 @@
 # HANDLING COMMAND LINE ARGUMENTS
 #######################################################################
 
-repo_base='/data/tkew/projects/understanding-ctx-aug/'
+repo_base='/data/tkew/projects/understanding-ctx-aug'
 test_file="resources/data/Topical-Chat/KGD/test_freq.json"
 batch_size=120
 
