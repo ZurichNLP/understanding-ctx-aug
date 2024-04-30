@@ -14,7 +14,7 @@ import pandas as pd
 try:
     from .perplexity import score_ppl
     from .sentence_processing import count_questions, count_exclamations
-    from .reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
+    from .reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu, compute_chrf
     from .distinct import distinct_n
     from .tokenization import tokenize_texts
     from .novelty import compute_novelty
@@ -23,7 +23,7 @@ try:
 except ImportError:
     from perplexity import score_ppl
     from sentence_processing import count_questions, count_exclamations
-    from reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu
+    from reference_metrics import compute_rouge, compute_bleu, compute_meteor, compute_exact_match, compute_self_bleu, compute_chrf
     from distinct import distinct_n
     from tokenization import tokenize_texts
     from novelty import compute_novelty
@@ -220,6 +220,7 @@ def compute_reference_based_metrics(
         )
     
     novelty = compute_novelty(sys_outputs, references, is_tokenized=is_tokenized, ignore_case=True, N=4, verbose=verbose)
+    chrf = compute_chrf(sys_outputs, references, is_tokenized=is_tokenized, verbose=verbose)
 
     if tag:
         tag = '_' + tag[0]
@@ -234,6 +235,7 @@ def compute_reference_based_metrics(
     result[f'novelty{tag}_2gram'] = novelty.get('2_gram') if novelty is not None else None
     result[f'novelty{tag}_3gram'] = novelty.get('3_gram') if novelty is not None else None
     result[f'novelty{tag}_4gram'] = novelty.get('4_gram') if novelty is not None else None
+    result[f'chrf{tag}'] = chrf['chrf'].get('score') if chrf is not None else None
 
     return result    
 

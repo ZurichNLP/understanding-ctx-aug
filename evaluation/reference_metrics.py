@@ -24,6 +24,7 @@ rouge = evaluate.load('rouge')
 meteor = evaluate.load('meteor')
 exact_match_metric = evaluate.load("exact_match")
 bertscore = evaluate.load('bertscore')
+chrf = evaluate.load('chrf')
 
 def compute_rouge(predictions: List[str], references: List[List[str]], is_tokenized: bool = False, verbose: bool = False) -> Dict:
     """
@@ -129,3 +130,18 @@ def compute_bertscore(predictions: List[str], references: List[str], is_tokenize
         # logger.info(f'Computing BERTScore with {len(predictions)} predictions and {len(references)} references...')
         print(f'Computing BERTScore with {len(predictions)} predictions and {len(references)} references...')
     return bertscore.compute(predictions=predictions, references=references, model_type="distilbert-base-uncased")
+
+def compute_chrf(predictions: List[str], references: List[str], is_tokenized: bool = False, verbose: bool = False) -> Dict:
+    """
+    https://huggingface.co/spaces/evaluate-metric/chrf
+
+    predictions = ["hello there", "general kenobi"]
+    references = [
+        "hello there general kenobi",
+        "foo bar foobar"
+    ]   
+    """ 
+    if verbose:
+        # logger.info(f'Computing chrF with {len(predictions)} predictions and {len(references)} references...')
+        print(f'Computing chrF with {len(predictions)} predictions and {len(references)} references...')
+    return chrf.compute(predictions=predictions, references=references)
