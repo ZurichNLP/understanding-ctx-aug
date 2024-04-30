@@ -172,21 +172,21 @@ CSD_EXPERIMENT_CONFIGS = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
-    "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CSD/contexts/train_questions.txt",
-        "context_code_attention_bias_value": 1,
-        "max_context_examples": 10,
-    },
+    # "qu_ctxt_aug1": {
+    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CSD/contexts/train_questions.txt",
+    #     "context_code_attention_bias_value": 1,
+    #     "max_context_examples": 10,
+    # },
     "pos_sent_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CSD/contexts/pos_sents.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 5,
     },
-    "pos_sent_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CSD/contexts/pos_sents.txt",
-        "context_code_attention_bias_value": 1,
-        "max_context_examples": 5,
-    },
+    # "pos_sent_ctxt_aug1": {
+    #     "context_augmentation_examples": "resources/data/Commonsense-Dialogues/CSD/contexts/pos_sents.txt",
+    #     "context_code_attention_bias_value": 1,
+    #     "max_context_examples": 5,
+    # },
 }
 
 DD_EXPERIMENT_CONFIGS = {
@@ -195,19 +195,19 @@ DD_EXPERIMENT_CONFIGS = {
         "context_code_attention_bias_value": 5,
         "max_context_examples": 10,
     },
-    "qu_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/train_questions.txt",
-        "context_code_attention_bias_value": 1,
-        "max_context_examples": 10,
-    },
+    # "qu_ctxt_aug1": {
+    #     "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/train_questions.txt",
+    #     "context_code_attention_bias_value": 1,
+    #     "max_context_examples": 10,
+    # },
     "pos_sent_ctxt_aug5": {
         "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/pos_sents.txt",
         "context_code_attention_bias_value": 5,
         "max_context_examples": 5,
     },
-    "pos_sent_ctxt_aug1": {
-        "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/pos_sents.txt",
-        "context_code_attention_bias_value": 1,
-        "max_context_examples": 5,
-    },
+    # "pos_sent_ctxt_aug1": {
+    #     "context_augmentation_examples": "resources/data/Daily-Dialog/DD/contexts/pos_sents.txt",
+    #     "context_code_attention_bias_value": 1,
+    #     "max_context_examples": 5,
+    # },
 }

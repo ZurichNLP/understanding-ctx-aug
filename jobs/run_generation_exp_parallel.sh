@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=lowprio
-#SBATCH --array=0-7
+#SBATCH --array=0-2
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -136,7 +136,10 @@ dataset_id=$(infer_dataset_id $test_file)
 # exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5" "hedging_contrast_ctxt_aug5" "hedging_management_ctxt_aug5" "hedging_evasion_ctxt_aug5" "e_words_ctxt_aug5" "d_words_ctxt_aug5" "i_words_ctxt_aug5" "n_words_ctxt_aug5")
 
 # set #SBATCH --array=0-7
-exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
+# exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
+
+# set #SBATCH --array=0-2
+exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5")
 
 # set #SBATCH --array=0-1
 # exp_ids=("long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
