@@ -81,11 +81,11 @@ if __name__ == "__main__":
         }
 
     # dataset-specific args
-    if args.dataset.lower() in ['kgd', 'topical_chat']:
+    if 'KGD' in args.dataset:
         gen_args.update(TOPICAL_CHAT_DATA_CONFIG)
-    elif args.dataset.lower() in ['csd', 'cs_dialog']:
+    elif 'CSD' in args.dataset:
         gen_args.update(COMMONSENSE_DIALOG_DATA_CONFIG)
-    elif args.dataset.lower() in ['dd', 'daily_dialog']:
+    elif 'DD' in args.dataset:
         gen_args.update(DAILY_DIALOG_DATA_CONFIG)
 
     # basic decoding args
@@ -97,12 +97,12 @@ if __name__ == "__main__":
     # experiment-specific args
     # note: it's possible to pass multiple experiment ids separated by '+', e.g. --exp_id=xa_knowledge+qu_ctxt_aug5
     for exp_id in args.exp_id.split('+'):
-        if args.dataset.lower() in ['kgd', 'topical_chat']:
+        if 'KGD' in args.dataset:
             exp_config = KGD_EXPERIMENT_CONFIGS.get(exp_id, None)
-        elif args.dataset.lower() in ['csd', 'cs_dialog']:
+        elif 'CSD' in args.dataset:
             exp_config = CSD_EXPERIMENT_CONFIGS.get(exp_id, None)
             gen_args.update({'beam_size': 1}) # reduce beam size for CD    
-        elif args.dataset.lower() in ['dd', 'daily_dialog']:
+        elif 'DD' in args.dataset:
             exp_config = DD_EXPERIMENT_CONFIGS.get(exp_id, None)
             
         if exp_id != 'baseline':
@@ -128,7 +128,6 @@ if __name__ == "__main__":
         # to execute seperate processes from the command line, uncomment this        
         arg_string = print_args(gen_args)
         print(f'Running inference.py with the following args:\n\t{arg_string}')
-        # os.system(f'python inference.py {arg_string}')
         
         m = InferenceModel(gen_args)
         predict_dataset = m.load_test_set_for_generation() # default: resources/data/Topical-Chat/KGD/test_freq.json
@@ -148,7 +147,7 @@ if __name__ == "__main__":
 
             minor_start = time.time() # time scoring run
 
-            if args.dataset.lower() in ['kgd', 'topical_chat']:
+            if 'KGD' in args.dataset:
                 scored = score_kgd_generation(
                     outputs, 
                     targets=[[i] for i in predict_dataset['target']],
@@ -156,7 +155,7 @@ if __name__ == "__main__":
                     dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
                     verbose=True if args.debug else False,
                     )
-            elif args.dataset.lower() in ['csd', 'cs_dialog']:
+            elif 'CSD' in args.dataset:
                 scored = score_kgd_generation(
                     outputs, 
                     targets=[[i] for i in predict_dataset['target']],
@@ -165,7 +164,7 @@ if __name__ == "__main__":
                     verbose=True if args.debug else False,
                     )
             
-            elif args.dataset.lower() in ['dd', 'daily_dialog']:
+            elif 'DD' in args.dataset:
                 scored = score_kgd_generation(
                     outputs, 
                     targets=[[i] for i in predict_dataset['target']],
@@ -173,7 +172,10 @@ if __name__ == "__main__":
                     dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
                     verbose=True if args.debug else False,
                     )
-                
+            
+            else:
+                raise ValueError(f'Invalid dataset: {args.dataset}. Must contain one of KGD, CSD, DD.')
+            
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)
         
@@ -182,9 +184,7 @@ if __name__ == "__main__":
             # to avoid losing data if the process is interrupted
             df = pd.DataFrame(results)
             print(f'Results currently has shape {df.shape}. Saving to {outfile} ...')
-            # print('-'*70)
-            # print(f'\t{results}')
-            # print('-'*70)
+            
             df.to_csv(outfile, index=False)
             
             minor_end = time.time()

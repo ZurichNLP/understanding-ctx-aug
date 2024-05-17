@@ -71,6 +71,7 @@ class InferenceModel:
         """
         Load TopcialChat KGD test dataset and run pre-processing (e.g. tokenization as required for KDG model)
         """
+        
         if dataset is not None:
             extension = dataset.split(".")[-1]
             dataset_dict = load_dataset(extension, data_files={'test': dataset})

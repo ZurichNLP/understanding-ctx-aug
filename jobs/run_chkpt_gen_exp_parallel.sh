@@ -1,12 +1,11 @@
 #!/bin/bash
-#SBATCH --time=04:00:00
+#SBATCH --time=23:59:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
-#SBATCH --qos=vesta
 #SBATCH --partition=lowprio
-#SBATCH --array=0-9
+#SBATCH --array=0-11
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -18,7 +17,7 @@
 repo_base='/data/tkew/projects/understanding-ctx-aug/'
 dataset="resources/data/Topical-Chat/KGD/valid_freq.json"
 batch_size=120
-max_predict_samples=0.2
+max_predict_samples=1.0
 
 # arguments that are not supported
 print_usage() {
@@ -80,14 +79,20 @@ source start.sh
 
 mkdir -p "$output_dir"
 
-exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "excl_ctxt_aug5" "qu_ctxt_aug1" "single_qu_ctxt_aug5")
+# exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "excl_ctxt_aug5" "qu_ctxt_aug1" "single_qu_ctxt_aug5")
+exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5")
 
-# checkpoints=$( ls -v "$model_path" | grep -P "checkpoint-" )
-# get the last checkpoint from each epoch
-checkpoints=( $( ls -v "$model_path" | grep 'checkpoint-' | awk 'NR % 3 == 0' | tr '\n' ' ') )
-# checkpoints=( $( ls -v "$model_path" | grep 'checkpoint-' | head -n 2 | tr '\n' ' ' ))
-# mapfile -t checkpoints < <($( ls -v "$model_path" | grep 'checkpoint-' | awk 'NR % 3 == 0' ))
-# checkpoints=$(find "$model_path" -iname "checkpoint-*" -type d)
+# get the first 2 checkpoints
+checkpoints=( $( ls -v "$model_path" | grep 'checkpoint-' | head -n 2 | tr '\n' ' ' ))
+
+# then get the last checkpoint from each epoch and store in checkpoints
+checkpoints+=( $( ls -v "$model_path" | grep 'checkpoint-' | awk 'NR % 3 == 0' | tr '\n' ' ' ))
+
+# ensure length of checkpoints is equal to the number of tasks
+if [[ "${#checkpoints[@]}" -ne "${SLURM_ARRAY_TASK_COUNT}" ]]; then
+    echo "Number of checkpoints does not match the number of tasks"
+    exit 1
+fi
 
 echo "Running for " "${#exp_ids[@]}" " experiments: " "${exp_ids[@]} ..."
 echo "Found " "${#checkpoints[@]}" " checkpoints: " "${checkpoints[@]} ..."
@@ -103,6 +108,7 @@ for exp_id in "${exp_ids[@]}"; do
         --dataset "$dataset" \
         --max_predict_samples "$max_predict_samples" \
         --exp_id "$exp_id"
+    count=$((count+1))
 done
 
 echo ""

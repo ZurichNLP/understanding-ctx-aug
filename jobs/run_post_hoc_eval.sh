@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --time=08:00:00
+#SBATCH --time=02:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=lowprio
 #SBATCH --output=%j.out
@@ -82,12 +82,11 @@ source start.sh
 # LAUNCH EXPERIMENT
 #######################################################################
 
-log_dir="$model_path/../../logs"
-log_file="$log_dir/$(basename "$model_path")_post_hoc_eval.log"
+# log_file="$repo_base/logs/$log_dir/$(basename "$model_path")_post_hoc_eval.log"
 
-echo "Logging to $log_file"
+# echo "Logging to $log_file"
 
 python evaluation/evaluation.py \
     "$model_outputs" \
     --references_file "$test_set" \
-    --output_dir "$output_dir" | tee "$log_file"
+    --output_dir "$output_dir"

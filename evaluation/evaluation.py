@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Dict, Optional, Union
+import re
 import json
 import argparse
 from pathlib import Path
@@ -43,6 +44,7 @@ def set_args():
     ap = argparse.ArgumentParser()
     ap.add_argument('generations', type=str, help='file or diectory of files containing generated outputs from inference.py')
     ap.add_argument('-r', '--references_file', type=str, default=None, help='e.g. `resources/data/Topical-Chat/KGD/test_freq.json`')
+    # ap.add_argument('--references_dir', type=str, default=None, help='directory containing reference files')
     ap.add_argument('-o', '--outfile', type=str, default=None, help='')
     ap.add_argument('--output_dir', type=str, default=None, help='')
     ap.add_argument('-v', '--verbose', action='store_true', help='')
@@ -51,28 +53,28 @@ def set_args():
                     type=str, 
                     default=[
                         'baseline', 
-                        'qu_ctxt_aug1', 
+                        # 'qu_ctxt_aug1', 
                         'qu_ctxt_aug5', 
-                        'short_qu_ctxt_aug5',
-                        'single_qu_ctxt_aug5',
-                        'xa_dialog', 
-                        'xa_dialog+qu_ctxt_aug5', 
-                        'xa_knowledge', 
-                        'xa_knowledge+qu_ctxt_aug5',
+                        # 'short_qu_ctxt_aug5',
+                        # 'single_qu_ctxt_aug5',
+                        # 'xa_dialog', 
+                        # 'xa_dialog+qu_ctxt_aug5', 
+                        # 'xa_knowledge', 
+                        # 'xa_knowledge+qu_ctxt_aug5',
                         'pos_sent_ctxt_aug5', 
-                        'single_pos_ctxt_aug5',
-                        # 'neu_sent_ctxt_aug5',
-                        'neg_sent_ctxt_aug5',
-                        'hedging_contrast_ctxt_aug5',
-                        'hedging_management_ctxt_aug5',
-                        'hedging_evasion_ctxt_aug5',
-                        'ambig_qu_ctxt_aug5',
-                        'ambig_excl_ctxt_aug5',
-                        'e_words_ctxt_aug5',
-                        'd_words_ctxt_aug5',
-                        'i_words_ctxt_aug5',
-                        'n_words_ctxt_aug5',
-                        'excl_ctxt_aug5',
+                        # 'single_pos_ctxt_aug5',
+                        # # 'neu_sent_ctxt_aug5',
+                        # 'neg_sent_ctxt_aug5',
+                        # 'hedging_contrast_ctxt_aug5',
+                        # 'hedging_management_ctxt_aug5',
+                        # 'hedging_evasion_ctxt_aug5',
+                        # 'ambig_qu_ctxt_aug5',
+                        # 'ambig_excl_ctxt_aug5',
+                        # 'e_words_ctxt_aug5',
+                        # 'd_words_ctxt_aug5',
+                        # 'i_words_ctxt_aug5',
+                        # 'n_words_ctxt_aug5',
+                        # 'excl_ctxt_aug5',
                         ],
                     help='experiment ids to run evaluation for (by default, will evaluate outputs for all)')
 
@@ -235,7 +237,7 @@ def compute_reference_based_metrics(
     result[f'novelty{tag}_2gram'] = novelty.get('2_gram') if novelty is not None else None
     result[f'novelty{tag}_3gram'] = novelty.get('3_gram') if novelty is not None else None
     result[f'novelty{tag}_4gram'] = novelty.get('4_gram') if novelty is not None else None
-    result[f'chrf{tag}'] = chrf['chrf'].get('score') if chrf is not None else None
+    result[f'chrf{tag}'] = chrf.get('score') if chrf is not None else None
 
     return result    
 
@@ -256,25 +258,32 @@ def parse_args_from_file(file: Path) -> Dict:
     """
     hack to parse args from a generation file for post-hoc evaluation
     """
-
-    model_name_or_path = str(file.parents[2])
-    checkpoint_dir = str(file.parents[1].name)
     
-    file_args = file.stem.split('_') # e.g. ['generationstest', 'freq', 'seed=0', 'ml=40', 'lp=1.0', 'ns=1', 'bs=4', 'ds=1', 'temp=0.7', 'tk=0', 'tp=0.9']
-    test_file = file_args[0][11:]+'_'+file_args[1]+'.json'
+    # ('resources', 'models', 'seed_23', 'KGD', 'bart_mini-rndm', 'outputs', 'generations_test_freq_seed\\=0_ml\\=40_lp\\=1.0_ns\\=1_bs\\=4_ds\\=1_temp\\=0.7_tk\\=0_tp\\=0.9.txt')
+    model_name_or_path = str(file.parts[4])
+    
+    if re.search(r'(checkpoint-\d+)', str(file)):
+        checkpoint_dir = re.search(r'(checkpoint-\d+)', str(file)).group(1)
+    else:
+        checkpoint_dir = 'best'
+
+    file_name = file.name
+    
+    test_file = re.search(r'_(test(_\w+)?)_seed', file_name).group(1) # e.g. 'test_freq', 'test_rare', 'test'
+
     text_column = 'turns'
     summary_column = 'target'
     knowledge_column = 'knowledge'
     batch_size = 120
-    max_length = int(file_args[3].split('=')[1])
-    do_sample = True if file_args[7].split('=')[1] == '1' else False
-    top_p = float(file_args[10].split('=')[1])
-    top_k = int(file_args[9].split('=')[1])
-    temperature = float(file_args[8].split('=')[1])
-    beam_size = int(file_args[7].split('=')[1])
-    num_return_sequences = int(file_args[6].split('=')[1])
+    max_length = int(re.search(r'ml=(\d+)', file_name).group(1))
+    do_sample = True if re.search(r'ds=(\d)', file_name).group(1) == '1' else False
+    top_p = float(re.search(r'tp=(\d+\.\d+)', file_name).group(1))
+    top_k = int(re.search(r'tk=(\d+)', file_name).group(1))
+    temperature = float(re.search(r'temp=(\d+\.\d+)', file_name).group(1))
+    beam_size = int(re.search(r'bs=(\d+)', file_name).group(1))
+    num_return_sequences = int(re.search(r'ns=(\d+)', file_name).group(1))
     write_to_file = 'auto' #str(file)
-    seed = int(file_args[2].split('=')[1])
+    seed = int(re.search(r'seed=(\d+)_', file_name).group(1))
         
     return {
         'model_name_or_path': model_name_or_path,
@@ -402,17 +411,26 @@ def main(args):
 
             assert len(generations_files) != 0, f'No generations files found for {exp_id} in {args.generations}'
 
+            references_file = args.references_file
+            print(f'Using references from {references_file} ...')
+
+            # filter out generations files that do not match the references file
+            # i.e. if the references file is test_freq.json, only evaluate generations files that contain 'freq' in their name
+            generations_files = list(filter(lambda f: Path(references_file).stem in f.name, generations_files))
+            print(f'Found {len(generations_files)} generations files for {exp_id} ...')
+            
             results = []
             for generations_file in generations_files:
-                print(f'====== Scoring {generations_file} ======')
-                sys_outputs = read_lines(generations_file)
-                source = read_json_lines(args.references_file) if args.references_file is not None else None
-                
                 gen_args = parse_args_from_file(generations_file)
-                
+
+                print(f'====== Scoring {generations_file} ======')
+                    
+                sys_outputs = read_lines(generations_file)
+                source = read_json_lines(references_file)
+                                
                 refs_t = [[i] for i in source['target']]
-                refs_k = [[i] for i in source['knowledge']]
                 refs_d = [[' '.join(i)] for i in source['turns']]
+                refs_k = [[i] for i in source['knowledge']] if 'knowledge' in source else None
 
                 scores = score_kgd_generation(
                     sys_outputs=sys_outputs,
@@ -424,10 +442,10 @@ def main(args):
                 
                 result = {**gen_args, **scores}
                 # results keys should contain the following columns
-                if set(result.keys()) != set(expected_keys):
-                    print(f'[!] WARNING: results keys do not match expected keys! This may be due to a change in the evaluation script. If you are sure the results are correct, please update the expected_keys variable.')
-                    print(f'\tExpected: {set(expected_keys)}')
-                    print(f'\tFound: {set(result.keys())}')
+                # if set(result.keys()) != set(expected_keys):
+                #     print(f'[!] WARNING: results keys do not match expected keys! This may be due to a change in the evaluation script. If you are sure the results are correct, please update the expected_keys variable.')
+                #     print(f'\tExpected: {set(expected_keys)}')
+                #     print(f'\tFound: {set(result.keys())}')
 
                 print(result)
                 results.append(result)

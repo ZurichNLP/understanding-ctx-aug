@@ -2,10 +2,10 @@
 #SBATCH --time=2:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=lowprio
-#SBATCH --array=0-2
+#SBATCH --array=0
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -139,8 +139,10 @@ dataset_id=$(infer_dataset_id $test_file)
 # exp_ids=("baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
 
 # set #SBATCH --array=0-2
-exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5")
+# exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5")
 
+# set #SBATCH --array=0
+exp_ids=("baseline")
 # set #SBATCH --array=0-1
 # exp_ids=("long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
 
