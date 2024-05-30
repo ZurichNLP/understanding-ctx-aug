@@ -1,16 +1,22 @@
-TOPICAL_CHAT_DATA_CONFIG = {
+KGD_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "knowledge",
 }
 
-COMMONSENSE_DIALOG_DATA_CONFIG = {
+TC_DATA_CONFIG = {
+    "text_column": "turns",
+    "summary_column": "target",
+    "knowledge_column": "none",
+}
+
+CSD_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "context",
 }
 
-DAILY_DIALOG_DATA_CONFIG = {
+DD_DATA_CONFIG = {
     "text_column": "turns",
     "summary_column": "target",
     "knowledge_column": "none",
@@ -210,4 +216,17 @@ DD_EXPERIMENT_CONFIGS = {
     #     "context_code_attention_bias_value": 1,
     #     "max_context_examples": 5,
     # },
+}
+
+TC_EXPERIMENT_CONFIGS = {
+    "qu_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/TC/contexts/train_questions.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 10,
+    },
+    "pos_sent_ctxt_aug5": {
+        "context_augmentation_examples": "resources/data/Topical-Chat/TC/contexts/pos_sents.txt",
+        "context_code_attention_bias_value": 5,
+        "max_context_examples": 5,
+    },
 }

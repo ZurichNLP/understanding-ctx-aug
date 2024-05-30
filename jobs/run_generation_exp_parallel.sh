@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=16G
 #SBATCH --gres=gpu:1
 #SBATCH --partition=lowprio
-#SBATCH --array=0
+#SBATCH --array=0-1
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -142,7 +142,11 @@ dataset_id=$(infer_dataset_id $test_file)
 # exp_ids=("baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5")
 
 # set #SBATCH --array=0
-exp_ids=("baseline")
+# exp_ids=("baseline")
+
+# set #SBATCH --array=0-1
+exp_ids=("qu_ctxt_aug5" "pos_sent_ctxt_aug5")
+
 # set #SBATCH --array=0-1
 # exp_ids=("long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5")
 

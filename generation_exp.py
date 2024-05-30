@@ -82,11 +82,13 @@ if __name__ == "__main__":
 
     # dataset-specific args
     if 'KGD' in args.dataset:
-        gen_args.update(TOPICAL_CHAT_DATA_CONFIG)
+        gen_args.update(KGD_DATA_CONFIG)
+    elif 'TC' in args.dataset:
+        gen_args.update(TC_DATA_CONFIG)
     elif 'CSD' in args.dataset:
-        gen_args.update(COMMONSENSE_DIALOG_DATA_CONFIG)
+        gen_args.update(CSD_DATA_CONFIG)
     elif 'DD' in args.dataset:
-        gen_args.update(DAILY_DIALOG_DATA_CONFIG)
+        gen_args.update(DD_DATA_CONFIG)
 
     # basic decoding args
     if args.greedy:
@@ -99,6 +101,8 @@ if __name__ == "__main__":
     for exp_id in args.exp_id.split('+'):
         if 'KGD' in args.dataset:
             exp_config = KGD_EXPERIMENT_CONFIGS.get(exp_id, None)
+        elif 'TC' in args.dataset:
+            exp_config = TC_EXPERIMENT_CONFIGS.get(exp_id, None)
         elif 'CSD' in args.dataset:
             exp_config = CSD_EXPERIMENT_CONFIGS.get(exp_id, None)
             gen_args.update({'beam_size': 1}) # reduce beam size for CD    
@@ -155,6 +159,14 @@ if __name__ == "__main__":
                     dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
                     verbose=True if args.debug else False,
                     )
+            elif 'TC' in args.dataset: # Topical Chat w/o knowledge
+                scored = score_kgd_generation(
+                    outputs, 
+                    targets=[[i] for i in predict_dataset['target']],
+                    knowledge_snippets=None, #[[''] for i in predict_dataset['target']],
+                    dialogs=[[' '.join(i)] for i in predict_dataset['turns']],
+                    verbose=True if args.debug else False,
+                    )
             elif 'CSD' in args.dataset:
                 scored = score_kgd_generation(
                     outputs, 
@@ -174,7 +186,7 @@ if __name__ == "__main__":
                     )
             
             else:
-                raise ValueError(f'Invalid dataset: {args.dataset}. Must contain one of KGD, CSD, DD.')
+                raise ValueError(f'Invalid dataset: {args.dataset}. Must contain one of KGD, TC, CSD, DD.')
             
             experiment_result = {**gen_args, **scored}
             results.append(experiment_result)

@@ -38,7 +38,7 @@ echo -e "eval_runs_per_epoch:\t$eval_runs_per_epoch"
 echo -e "init_as_random:\t\t$init_as_random"
 
 
-if [[ $data_dir == *"Topical-Chat"* ]]; then
+if [[ $data_dir == *"KGD"* ]]; then
     # alternative training sets for for investigations
     if [[ $save_dir == *"_sub" ]]; then
         train_file="$data_dir/train_39572.json"
@@ -60,12 +60,17 @@ if [[ $data_dir == *"Topical-Chat"* ]]; then
     validation_file="$data_dir/valid_freq.json"
     test_file="$data_dir/test_freq.json"
     knowledge_column="knowledge"
-elif [[ $data_dir == *"Commonsense-Dialogues"* ]]; then
+elif [[ $data_dir == *"TC"* ]]; then
+    train_file="$data_dir/train.json"
+    validation_file="$data_dir/valid_freq.json"
+    test_file="$data_dir/test_freq.json"
+    knowledge_column="none"
+elif [[ $data_dir == *"CSD"* ]]; then
     train_file="$data_dir/train.json"
     validation_file="$data_dir/valid.json"
     test_file="$data_dir/test.json"
     knowledge_column="context"
-elif [[ $data_dir == *"Daily-Dialog"* ]]; then
+elif [[ $data_dir == *"DD"* ]]; then
     train_file="$data_dir/train.json"
     validation_file="$data_dir/valid.json"
     test_file="$data_dir/test.json"
