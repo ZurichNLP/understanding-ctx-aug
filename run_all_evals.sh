@@ -15,15 +15,26 @@ run_eval() {
     if [ ! -d "$model_dir" ]; then
         echo "Model not found: $model_dir"
         exit 1
-    elif [ -d "$output_dir" ]; then
+    elif [ ! -d "$output_dir" ]; then
         mkdir -p $output_dir
+        echo "Will run evals for $model_dir ..."
+
+    # not tested!
+    # elif [ -d "$output_dir" ]; then
+    #     # check if all .csv files contain 6 lines
+    #     if [ ! $(find $output_dir -name "*.csv" | xargs wc -l |  awk '{if (!/total/) print $1}' | grep -v 6 | wc -l) -eq 0 ]; then
+    #         echo "Output directory exists but some files are incomplete: $output_dir"
+    #         echo "Will re-run evals for $model_dir ..."
+    #     else
+    #         echo "Will Skip evals for $model_dir ... Output directory already exists and files complete: $output_dir"
+    #         return
+    #     fi
+        
     fi
 
+
     echo "Running eval for $model_dir"
-    # CUDA_VISIBLE_DEVICES=0 python evaluation/evaluation.py $model_dir \
-    #     --references_file $test_set \
-    #     --output_dir $output_dir \
-    #     --exp_ids "baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5"
+    
     sbatch jobs/run_post_hoc_eval.sh \
         -m $model_dir \
         -t $test_set \
@@ -62,14 +73,14 @@ run_kgd_eval_public() {
 
 run_tc_eval() {
 
-    for ft_model in "bart_mini-rndm"; do
-        for seed in 23; do
-    # for ft_model in "bart_mini-rndm" "bart_mini-MLM_PS" "bart_mini-MLM" "bart_mini-PS" "bart_mini-SI_bart" "bart_mini-SI_mass" "bart_mini-SI_t5"; do
-    #     for seed in 23 42 1984; do
-            model_dir="resources/models/seed_${seed}/TC/${ft_model}"
-            test_set="resources/data/Topical-Chat/TC/test_freq.json"
-            output_dir="resources/results_with_chrf/seed_${seed}/TC/${ft_model}"
-            run_eval "$model_dir" "$test_set" "$output_dir" 
+    for ft_model in "bart_mini-rndm" "bart_mini-MLM_PS" "bart_mini-MLM" "bart_mini-PS" "bart_mini-SI_bart" "bart_mini-SI_mass" "bart_mini-SI_t5"; do
+        for seed in 23 42 1984; do
+            for split in "test_freq"; do
+                model_dir="resources/models/seed_${seed}/TC/${ft_model}"
+                test_set="resources/data/Topical-Chat/TC/test_freq.json"
+                output_dir="resources/results_with_chrf/seed_${seed}/TC-${split}/${ft_model}"
+                run_eval "$model_dir" "$test_set" "$output_dir" 
+            done
         done
     done
 }
