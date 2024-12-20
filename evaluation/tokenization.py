@@ -5,16 +5,27 @@ from typing import List, Dict, Optional, Union
 from tqdm import tqdm
 from mosestokenizer import MosesSentenceSplitter, MosesTokenizer
 
-def sentencize_texts(texts: List[str], lang: str = 'en') -> List[List[str]]:
+def sentencize_texts(texts: List[str], lang: str = 'en', verbose=True) -> List[List[str]]:
     """
     Split 'texts' at sentence boundaries.
     """
     tok_texts = []
+    # breakpoint()
     with MosesSentenceSplitter(lang) as splitsents:
-        for text in tqdm(texts, total=len(texts), desc="Splitting Sentences"):
-            text_qu_cnt = 0
-            sentences = splitsents([text]) # note, MosesSentenceSplitter takes a list of lines (strings) and returns a list of sentences (strings)
-            tok_texts.append(sentences)
+        if verbose:
+            for text in tqdm(texts, total=len(texts), desc="Splitting Sentences"):
+                if text:
+                    sentences = splitsents([text]) # note, MosesSentenceSplitter takes a list of lines (strings) and returns a list of sentences (strings)
+                    tok_texts.append(sentences)
+                else:
+                    tok_texts.append([''])
+        else:
+            for text in texts:
+                if text:
+                    sentences = splitsents([text])
+                    tok_texts.append(sentences)
+                else:
+                    tok_texts.append([''])
     return tok_texts
 
 def tokenize_ref_texts(texts: List[str], lang: str = 'en'):

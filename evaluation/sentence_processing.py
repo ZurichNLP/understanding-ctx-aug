@@ -9,12 +9,12 @@ try:
 except ImportError:
     from tokenization import sentencize_texts
 
-def count_questions(texts: List[str], lang: str = 'en'):
+def count_questions(texts: List[str], lang: str = 'en', verbose: bool = False):
     """
     Counts the number of sentences ending with a question mark
     """
     qc = []    
-    for text in sentencize_texts(texts):
+    for text in sentencize_texts(texts, lang=lang, verbose=verbose):
         text_qu_cnt = 0
         for sentence in text:
             if sentence.endswith('?'):
