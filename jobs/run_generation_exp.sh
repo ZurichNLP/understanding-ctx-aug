@@ -3,8 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=16G
-#SBATCH --gres=gpu:V100:1
-#SBARCH --constraint=GPUMEM32GB
+#SBATCH --gres=gpu:1
 #SBATCH --output=%j.out
 
 # Author: T. Kew
@@ -115,7 +114,7 @@ if [[ -z $exp_id ]]; then
     # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "short_qu_ctxt_aug5" "pos_sent_ctxt_aug5" "neg_sent_ctxt_aug5" "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5" "ambig_qu_ctxt_aug5" "ambig_excl_ctxt_aug5" "excl_ctxt_aug5"; do
 
     # for exp_id in "baseline" "qu_ctxt_aug1" "qu_ctxt_aug5" "qu_ctxt_aug10_50" "qu_ctxt_aug10_100"; do
-    for exp_id in "baseline" "qu_ctxt_aug5" "qu_ctxt_aug1" "short_qu_ctxt_aug5"; do
+    for exp_id in "baseline" "qu_ctxt_aug5" "pos_sent_ctxt_aug5"; do
     
     # for exp_id in "long_pos_sent_ctxt_aug5" "long_neg_sent_ctxt_aug5"; do
 
